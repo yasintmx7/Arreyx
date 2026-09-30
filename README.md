@@ -1,6 +1,6 @@
 # ArreyX
 
-A swap, bridge and pool-discovery interface for ten EVM networks. Swaps and bridges use the LI.FI Widget v4 for live token catalogs, wallet balances, routes, fees, execution and transaction tracking. Pool discovery uses GeckoTerminal's public API.
+A swap, bridge and pool-discovery interface for ten EVM networks. Swaps and bridges use the LI.FI Widget v4 for live token catalogs, wallet balances, routes, fees, execution and transaction tracking. Pool discovery and the WETH/USDC market chart use GeckoTerminal's public API.
 
 ## Run
 
@@ -26,6 +26,8 @@ npm run build
 The interface offers Ethereum, Arbitrum, Base, BNB Chain, OP Mainnet, Polygon, Avalanche, Gnosis, Scroll and Linea. LI.FI's live chain and token catalog determines what is available for a given pair. Routes and output amounts require a current provider response; nothing is fabricated when a provider is unavailable. A compatible installed EVM wallet is required to show balances and sign a transaction. The application never collects seed phrases or private keys.
 
 The Pools tab shows current trending pools, liquidity and volume from GeckoTerminal and links to each pool's page. Liquidity deposits and withdrawals happen at the pool's source; ArreyX does not initiate them. GeckoTerminal's public API is rate-limited, so its data can sometimes be unavailable.
+
+The Swap view includes a 24-hour, 7-day and 30-day chart of the Ethereum WETH/USDC Uniswap v3 0.05% pool. Its OHLCV candles refresh every minute while the view is open. This is market context for one identified pool; the selected LI.FI route may use other pools and have a different executable price.
 
 Public RPCs are used by the widget unless a dedicated RPC is configured. Production operators should configure authenticated RPC endpoints and monitor provider availability. Always review token, network, minimum received and transaction details in the wallet before signing.
 
