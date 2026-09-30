@@ -172,6 +172,23 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 @media(max-width:740px){.live-main{padding-top:30px}.live-pools{padding:18px}.pools-heading{flex-direction:column;gap:14px}.pools-heading select{width:100%}.pool-column-head,.pool-row{grid-template-columns:minmax(0,1fr) 85px 90px;gap:7px;padding:13px 5px;font-size:11px}.pool-column-head{font-size:9px}.live-shell footer span:last-child{display:none}}
 
 .swap-market-layout{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:22px;align-items:start}
+.market-sidebar{min-width:0;display:grid;gap:20px}
+.balances-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;min-width:0}
+.balances-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.balances-kicker{display:flex;align-items:center;gap:7px;color:#9eabec;font-size:10px;font-weight:700;letter-spacing:.13em}
+.balances-heading h2{font-size:22px;font-weight:600;letter-spacing:-.04em;margin:10px 0 4px}
+.balances-heading p{font-size:12px;color:var(--muted)}
+.balances-heading button{width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--border);border-radius:8px;color:var(--muted)}
+.balances-heading button:hover:not(:disabled){color:var(--text);background:var(--raised)}
+.balances-network{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:25px;padding:13px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)}
+.balances-network select{max-width:60%;background:var(--raised);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.balances-empty{min-height:100px;display:flex;align-items:center;font-size:13px;line-height:1.5;color:var(--muted)}
+.balances-list{padding:8px 0}
+.balances-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);font-size:13px}
+.balances-row:last-child{border-bottom:0}
+.balances-row strong{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.balances-row .balance-error{color:var(--muted);font-weight:400}
+.balances-note{font-size:11px;line-height:1.6;color:var(--muted);margin-top:8px}
 .chart-toggle{align-self:center;border:1px solid var(--border);border-radius:9px;padding:10px 15px;color:var(--text);background:var(--surface);font-size:12px;font-weight:600;white-space:nowrap}
 .live-shell .header nav a{display:inline-flex;align-items:center}
 .chart-toggle:hover{background:var(--raised)}
