@@ -58,7 +58,7 @@ export function LiveExchange() {
   const hydrated = useHydrated();
   const [view, setView] = useState<View>('swap');
   const [theme, setTheme] = useState<Theme>('dark');
-  const [chartVisible, setChartVisible] = useState(true);
+  const [chartVisible, setChartVisible] = useState(false);
   const [chartTokens, setChartTokens] = useState({ fromChain: 1, fromToken: '0x0000000000000000000000000000000000000000', toChain: 1, toToken: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' });
   useEffect(() => {
     const onField = (data: FormFieldChanged) => {
