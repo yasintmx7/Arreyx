@@ -1,2 +1,2 @@
-import { LiveExchange } from '@/components/live-exchange';
-export default function Page() { return <LiveExchange />; }
+import { HomePage } from '@/components/home-page';
+export default function Page() { return <HomePage />; }

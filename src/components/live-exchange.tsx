@@ -57,6 +57,7 @@ export function LiveExchange() {
   const hydrated = useHydrated();
   const [view, setView] = useState<View>('swap');
   const [theme, setTheme] = useState<Theme>('dark');
+  useEffect(() => { const frame = requestAnimationFrame(() => { const requested = new URLSearchParams(window.location.search).get('view'); if (requested === 'bridge' || requested === 'pools') setView(requested); }); return () => cancelAnimationFrame(frame); }, []);
   useEffect(() => { const frame = requestAnimationFrame(() => { const saved = localStorage.getItem('arreyx-theme'); setTheme(saved === 'light' || saved === 'dark' ? saved : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); }); return () => cancelAnimationFrame(frame); }, []);
   useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; }, [theme]);
   const config = useMemo<WidgetConfig>(() => ({

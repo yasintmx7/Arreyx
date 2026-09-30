@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open the local address printed by Next.js. The build is a static export for Vercel.
+Open the local address printed by Next.js. The home page explains the product; **Get started** and **Open app** lead to `/app`, where Swap opens first. Feature cards can open Bridge or Pools directly. The build is a static export for Vercel.
 
 ## Verify
 
