@@ -5,3 +5,110 @@
 .modal{margin:0;color:var(--text)}.modal:not([open]){display:none}.modal::backdrop{background:#07090cba;backdrop-filter:blur(5px)}
 .field-top,.route-list-heading,.disclosure,.swap-details,.swap-details button,.route-choice-top strong{font-size:14px}.field-top>span,.field-bottom,.quote-meta,.swap-assurance,.route-choice-bottom>span,.route-choice-bottom strong small,.route-foot,.score-reason,.route-end,.route-end small,.route-branch,.route-branch>small,.principles{font-size:12px}.route-intro{font-size:14px}.heading-index,.kicker,.eyebrow,.demo-tag,.best-badge{font-size:12px}.route-choice{padding:14px}.route-panel h2{font-size:28px}.swap-card{padding:24px}.token-picker{min-height:44px}.disclosure,.chain-button{min-height:44px}.page-heading p{font-size:16px}.modal-description,.setting p{font-size:14px}
 @media(max-width:740px){.swap-card{padding:18px}.route-choice-top strong{font-size:14px}.route-choice-bottom>span{font-size:12px}.best-badge{font-size:10px}.field-top>span{font-size:12px}.quote-meta>div>.muted:last-child{display:none}.principles{font-size:12px}.modal{margin:0}.icon-button{min-width:44px;min-height:44px}}
+
+/* The exchange is the first viewport: quiet surfaces, one action, and compact routes. */
+:root {
+  --bg: #101216;
+  --surface: #181b20;
+  --raised: #20242a;
+  --border: #30343b;
+  --text: #f4f5f7;
+  --muted: #9ca3af;
+  --accent: #5969ed;
+}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.header { height: 76px; padding: 0 40px; gap: 54px; border-color: #282c33; }
+.brand { font-size: 23px; letter-spacing: -.9px; }
+.brand-mark { width: 29px; height: 30px; color: #a5aefd; }
+.header nav { gap: 28px; }
+.header nav button { font-size: 14px; }
+.header nav button.active:after { background: var(--accent); }
+.header-actions { gap: 18px; }
+.environment { display: inline-flex; font-size: 12px; color: #aab2c0; border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; }
+.wallet-button { background: #252a42; border-color: #3a4366; padding: 10px 14px; min-height: 40px; }
+main { max-width: 980px; padding: 52px 30px 48px; }
+.page-heading { margin: 0 0 26px; }
+.page-heading h1 { font-size: 30px; line-height: 1.2; letter-spacing: -1px; font-weight: 550; }
+.page-heading p { margin-top: 8px; font-size: 14px; color: var(--muted); }
+.workspace { grid-template-columns: minmax(0, 1.35fr) minmax(0, .9fr); gap: 30px; align-items: start; }
+.swap-card { padding: 24px; border-radius: 15px; border-color: var(--border); box-shadow: none; }
+.swap-heading { justify-content: flex-end; margin-bottom: 18px; min-height: 40px; }
+.swap-heading>div { gap: 8px; }
+.chain-button { background: #242830; border: 1px solid #353a43; border-radius: 8px; padding: 9px 12px; font-size: 13px; }
+.chain-glyph { font-size: 16px; }
+.icon-button { color: #abb3c1; }
+.token-fields { display: flex; flex-direction: column; gap: 8px; }
+.token-input, .token-input.buy { background: #202329; border-color: #30353d; border-radius: 10px; padding: 18px; }
+.field-top { font-size: 13px; color: #b7beca; }
+.amount-row { margin: 18px 0 14px; }
+.amount-row input { font-size: 34px; letter-spacing: -1.2px; }
+.token-picker { background: #30343c; border: 1px solid #454a54; border-radius: 9px; min-height: 44px; font-size: 15px; padding: 5px 10px 5px 5px; }
+.token-picker:hover { background: #3a3f49; }
+.token-icon { width: 29px; height: 29px; font-size: 21px; }
+.field-bottom { font-size: 12px; color: #a7afbb; }
+.max { color: #b5beff; font-size: 11px; }
+.direction-row { height: 0; }
+.direction-row button { top: -24px; width: 39px; height: 39px; background: #2b3038; border: 4px solid var(--surface); border-radius: 11px; }
+.quote-meta { margin: 21px 0 16px; font-size: 12px; }
+.quote-meta>div>.muted:last-child { font-size: 11px; }
+.swap-details { padding-top: 17px; gap: 12px; font-size: 12px; }
+.swap-details button { font-size: 12px; }
+.primary { border: 0; border-radius: 9px; background: var(--accent); min-height: 50px; }
+.primary:hover:not(:disabled) { background: #6b79f0; }
+.swap-cta { margin-top: 24px; }
+.swap-assurance { margin-top: 14px; font-size: 11px; color: #9ba4b2; }
+.route-panel { padding: 5px 0 0; }
+.route-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; color: var(--text); }
+.route-panel h2 { font-size: 20px; font-weight: 550; line-height: 1.2; letter-spacing: -.4px; margin: 0; }
+.route-heading p { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.route-count { min-width: 24px; height: 24px; padding: 3px 7px; display: grid; place-items: center; border-radius: 6px; background: #272b32; color: #b8bfcd; font-size: 12px; }
+.routes { gap: 0; border-top: 1px solid var(--border); }
+.route-choice { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; padding: 17px 12px; }
+.route-choice:hover { border-color: var(--border); background: #1b1f26; }
+.route-choice.chosen { border: 0; border-bottom: 1px solid #526095; border-left: 2px solid #8d9aff; background: #1d2230; padding-left: 10px; }
+.route-choice-top strong { font-size: 14px; font-weight: 600; }
+.best-badge { background: transparent; color: #b4c0ff; font-size: 11px; padding: 0; margin-left: 5px; }
+.radio { width: 17px; height: 17px; border-color: #687080; }
+.chosen .radio { background: #95a1ff; border-color: #95a1ff; }
+.route-choice-bottom { margin-top: 8px; align-items: baseline; }
+.route-choice-bottom strong { font-size: 16px; }
+.route-choice-bottom strong small { font-size: 12px; }
+.route-choice-bottom>span { font-size: 11px; color: #a4adbc; }
+.route-composition { margin-top: 10px; }
+.disclosure { min-height: 48px; padding: 0; color: #c7cedb; font-size: 13px; }
+.route-path { padding: 4px 10px 16px; }
+.route-foot { margin-top: 17px; color: #9ca5b2; font-size: 11px; }
+.route-foot>svg:last-child { margin-left: 0; }
+.route-empty { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; min-height: 178px; }
+.activity-card { border-radius: 15px; }
+footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
+@media (max-width: 740px) {
+  .header { height: 68px; padding: 0 18px; gap: 24px; }
+  .brand { font-size: 21px; }
+  .brand-mark { width: 26px; margin-right: 5px; }
+  .header nav { gap: 15px; }
+  .header nav button { font-size: 13px; }
+  .environment { display: none; }
+  .wallet-button { min-width: 42px; min-height: 42px; padding: 10px; }
+  main { max-width: 550px; padding: 30px 18px 35px; }
+  .page-heading { margin-bottom: 23px; }
+  .page-heading h1 { font-size: 27px; }
+  .page-heading p { font-size: 13px; }
+  .workspace { grid-template-columns: 1fr; gap: 26px; }
+  .swap-card { padding: 18px; }
+  .route-panel { padding: 0 3px; }
+  .route-heading { margin-bottom: 12px; }
+  .route-heading p { font-size: 12px; }
+  .route-choice { padding: 16px 10px; }
+  .route-choice.chosen { padding-left: 8px; }
+  footer { padding: 18px; }
+}
+@media (max-width: 380px) {
+  .header { gap: 14px; padding: 0 12px; }
+  .header nav { gap: 10px; }
+  main { padding-left: 12px; padding-right: 12px; }
+  .swap-card { padding: 15px; }
+  .token-input, .token-input.buy { padding: 16px 12px; }
+  .amount-row input { font-size: 30px; }
+  .route-choice-bottom { align-items: flex-start; flex-direction: column; gap: 4px; }
+}
