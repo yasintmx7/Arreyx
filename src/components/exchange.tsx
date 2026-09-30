@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ArrowDownUp, Check, CheckCheck, ChevronDown, Clock3, History, Info, LoaderCircle, LockKeyhole, Settings2, Wallet, X } from 'lucide-react';
+import { ArrowDownUp, Check, CheckCheck, ChevronDown, Clock3, History, Info, LoaderCircle, LockKeyhole, Moon, Settings2, Sun, Wallet, X } from 'lucide-react';
 import { chains, tokensForChain } from '@/config/registry';
 import type { Activity, QuoteRequest, RoutePreference, Token } from '@/types/domain';
 import { formatAmount, parseAmount, usd, valueUsd } from '@/lib/amounts';
@@ -12,6 +12,20 @@ import { Modal, SettingsDialog, TokenDialog, WalletDialog } from './dialogs';
 import { RoutePanel } from './route-panel';
 
 export function Exchange() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  useEffect(() => {
+    const saved = localStorage.getItem('arreyx-theme');
+    setTheme(saved === 'light' || saved === 'dark' ? saved : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('arreyx-theme', next);
+    setTheme(next);
+  }
   const [chainId, setChainId] = useState(1);
   const tokens = useMemo(() => tokensForChain(chainId), [chainId]);
   const [sellSymbol, setSellSymbol] = useState('ETH');
@@ -72,7 +86,7 @@ export function Exchange() {
   }
   const primaryLabel = !connected ? 'Connect wallet' : inputError ? 'Check amount' : !amountIn ? 'Enter an amount' : insufficient ? 'Insufficient balance' : quote.status === 'loading' ? 'Finding routes…' : !selected ? 'No route available' : 'Review swap';
   return <div className="app-shell">
-    <header className="header"><Link className="brand" href="/" aria-label="ArreyX home"><span className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 33 18 5h8L10 33zm20 0 6-11 11 11zM27 5h12L28 17z" fill="currentColor" /></svg></span>Arrey<span className="brand-x">X</span></Link><nav aria-label="Main navigation"><button className={tab === 'swap' ? 'active' : ''} onClick={() => setTab('swap')}>Swap</button><button className={tab === 'activity' ? 'active' : ''} onClick={() => setTab('activity')}>Activity{activity.length > 0 && <span className="nav-count">{activity.length}</span>}</button></nav><div className="header-actions"><span className="environment">Demo</span><button aria-label={connected ? 'Demo wallet' : 'Connect wallet'} className="wallet-button" onClick={() => connected ? setAccountOpen(true) : setWalletOpen(true)}><Wallet size={16} /><span>{connected ? 'Demo wallet' : 'Connect wallet'}</span></button></div></header>
+    <header className="header"><Link className="brand" href="/" aria-label="ArreyX home"><span className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 33 18 5h8L10 33zm20 0 6-11 11 11zM27 5h12L28 17z" fill="currentColor" /></svg></span>Arrey<span className="brand-x">X</span></Link><nav aria-label="Main navigation"><button className={tab === 'swap' ? 'active' : ''} onClick={() => setTab('swap')}>Swap</button><button className={tab === 'activity' ? 'active' : ''} onClick={() => setTab('activity')}>Activity{activity.length > 0 && <span className="nav-count">{activity.length}</span>}</button></nav><div className="header-actions"><span className="environment">Demo</span><button className="theme-toggle" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button><button aria-label={connected ? 'Demo wallet' : 'Connect wallet'} className="wallet-button" onClick={() => connected ? setAccountOpen(true) : setWalletOpen(true)}><Wallet size={16} /><span>{connected ? 'Demo wallet' : 'Connect wallet'}</span></button></div></header>
     <main>
       <div className="page-heading"><div><h1>{tab === 'swap' ? 'Swap' : 'Activity'}</h1><p>{tab === 'swap' ? 'Exchange assets with a clear view of every route.' : 'Your swaps from this demo session.'}</p></div></div>
       {tab === 'swap' ? <div className="workspace"><section className="swap-card"><div className="swap-heading"><h2 className="sr-only">Swap details</h2><div><button className="chain-button" onClick={() => setNetworkOpen(true)}><span className="chain-glyph">♦</span>{currentChain.name}<ChevronDown size={14} /></button><button className="icon-button" aria-label="Swap settings" onClick={() => setSettingsOpen(true)}><Settings2 size={18} /></button></div></div><div className="token-fields"><TokenInput side="sell" token={sell} amount={amount} onAmount={setAmount} onSelect={() => setTokenSide('sell')} connected={connected} usdValue={usd(valueUsd(amountIn, sell.decimals, sell.priceUsdMicros))} onMax={() => setAmount(sell.address === 'native' ? formatAmount(parseAmount(sell.demoBalance, sell.decimals) - parseAmount('0.01', sell.decimals), sell.decimals, sell.decimals).replaceAll(',', '') : sell.demoBalance)} /><div className="direction-row"><button aria-label="Reverse token direction" onClick={() => { setSellSymbol(buySymbol); setBuySymbol(sellSymbol); setSelectedId(''); }}><ArrowDownUp size={17} /></button></div><TokenInput side="buy" token={buy} amount={selected ? formatAmount(selected.expectedAmountOut, buy.decimals, 6) : ''} onSelect={() => setTokenSide('buy')} connected={connected} usdValue={selected ? usd(selected.outputValueUsd) : '$0.00'} loading={quote.status === 'loading'} /></div>
