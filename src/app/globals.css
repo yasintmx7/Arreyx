@@ -172,6 +172,8 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 @media(max-width:740px){.live-main{padding-top:30px}.live-pools{padding:18px}.pools-heading{flex-direction:column;gap:14px}.pools-heading select{width:100%}.pool-column-head,.pool-row{grid-template-columns:minmax(0,1fr) 85px 90px;gap:7px;padding:13px 5px;font-size:11px}.pool-column-head{font-size:9px}.live-shell footer span:last-child{display:none}}
 
 .swap-market-layout{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:22px;align-items:start}
+.chart-toggle{align-self:center;border:1px solid var(--border);border-radius:9px;padding:10px 15px;color:var(--text);background:var(--surface);font-size:12px;font-weight:600;white-space:nowrap}
+.chart-toggle:hover{background:var(--raised)}
 .swap-market-layout>.widget-wrap{min-width:0}
 .market-chart{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;min-width:0}
 .chart-heading{display:flex;align-items:start;justify-content:space-between;gap:10px}
