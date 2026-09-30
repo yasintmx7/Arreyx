@@ -1,8 +1,9 @@
 # ArreyX
 
-A responsive DEX frontend prototype with independent routing orchestration.
+A swap, bridge and pool-discovery interface for ten EVM networks. Swaps and bridges use the LI.FI Widget v4 for live token catalogs, wallet balances, routes, fees, execution and transaction tracking. Pool discovery uses GeckoTerminal's public API.
 
 ## Run
+
 Requires Node 20.9+ and npm.
 
 ```sh
@@ -10,27 +11,22 @@ npm ci
 npm run dev
 ```
 
-Open the local address printed by Next.js. `npm run build` produces a static export in `out/` for Phase 1 hosting.
+Open the local address printed by Next.js. The build is a static export for Vercel.
 
 ## Verify
+
 ```sh
 npm run typecheck
 npm run lint
-npm test
 npm run build
 ```
 
-## Explore
-- Open Connect wallet → Try a demo wallet.
-- Search curated tokens; change the network or reverse the pair.
-- Compare routes, expand composition and choose an alternative.
-- Settings supports slippage, ranking modes and failed/no-liquidity provider scenarios.
-- Review and confirm a demo swap. ERC20 sells include simulated approval.
-- Check “Test a rejected signature” for the failure flow.
-- Activity contains this tab's completed/rejected simulations; reloading clears it.
-- Demo balances do not change after simulations. All quoted USD prices are fixtures.
+## Data and transaction boundaries
 
-## Boundaries
-No live wallet integration, live market feeds, real approvals, real swaps or cross-chain execution is enabled. Demo token identities deliberately cannot be used as contract addresses. Atlas, Flow and Direct are fictional provider labels; protocol names describe simulated paths only. Mock routes must never authorize real transactions.
+The interface offers Ethereum, Arbitrum, Base, BNB Chain, OP Mainnet, Polygon, Avalanche, Gnosis, Scroll and Linea. LI.FI's live chain and token catalog determines what is available for a given pair. Routes and output amounts require a current provider response; nothing is fabricated when a provider is unavailable. A compatible installed EVM wallet is required to show balances and sign a transaction. The application never collects seed phrases or private keys.
 
-The first production provider is planned as 0x AllowanceHolder. Credentials alone do not enable live mode: server integration, verified contract configuration, wallet integration, transaction validation, fork testing and a security review remain required. See [architecture](docs/ARCHITECTURE.md) for the exact boundaries, state machine and roadmap. Dependency versions are recorded in package-lock.json.
+The Pools tab shows current trending pools, liquidity and volume from GeckoTerminal and links to each pool's page. Liquidity deposits and withdrawals happen at the pool's source; ArreyX does not initiate them. GeckoTerminal's public API is rate-limited, so its data can sometimes be unavailable.
+
+Public RPCs are used by the widget unless a dedicated RPC is configured. Production operators should configure authenticated RPC endpoints and monitor provider availability. Always review token, network, minimum received and transaction details in the wallet before signing.
+
+Sources: [LI.FI Widget](https://docs.li.fi/widget/overview), [LI.FI configuration](https://docs.li.fi/widget/configure-widget), [GeckoTerminal API](https://apiguide.geckoterminal.com/).

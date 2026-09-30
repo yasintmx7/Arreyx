@@ -150,3 +150,23 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 [data-theme="light"] .secondary:hover{background:#e1e7f2}
 [data-theme="light"] .nav-count{background:#e7ebfa;color:#4559b5}
 [data-theme="light"] .swap-assurance,[data-theme="light"] footer{color:var(--muted)}
+
+.live-main{max-width:1040px;padding-top:46px}
+.widget-wrap{min-height:580px}
+.widget-loading{min-height:480px;display:grid;place-items:center;border:1px solid var(--border);border-radius:16px;color:var(--muted)}
+.live-pools{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px}
+.pools-heading{display:flex;align-items:start;justify-content:space-between;gap:24px;margin-bottom:20px}
+.pools-heading h2{font-size:19px;font-weight:600}
+.pools-heading p{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px;max-width:550px}
+.pools-heading select{width:190px;margin:0;background:var(--raised);border-color:var(--border)}
+.pool-status{min-height:240px;display:grid;place-items:center;color:var(--muted);text-align:center}
+.pool-column-head,.pool-row{display:grid;grid-template-columns:minmax(0,1fr) 150px 150px;gap:16px;align-items:center}
+.pool-column-head{padding:12px 14px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border)}
+.pool-row{padding:16px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.pool-row:hover{background:var(--raised)}
+.pool-row strong{font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pool-row>span:last-child{display:flex;align-items:center;gap:7px}
+.pool-row svg,.pool-source svg{color:var(--accent)}
+.pool-source{display:flex;gap:4px;align-items:center;margin-top:20px;font-size:11px;color:var(--muted)}
+.pool-source a{display:inline-flex;align-items:center;gap:2px;color:var(--accent)}
+@media(max-width:740px){.live-main{padding-top:30px}.live-pools{padding:18px}.pools-heading{flex-direction:column;gap:14px}.pools-heading select{width:100%}.pool-column-head,.pool-row{grid-template-columns:minmax(0,1fr) 85px 90px;gap:7px;padding:13px 5px;font-size:11px}.pool-column-head{font-size:9px}.live-shell footer span:last-child{display:none}}
