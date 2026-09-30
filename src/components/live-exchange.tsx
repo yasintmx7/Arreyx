@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { LiFiWidget, WidgetEvent, widgetEvents, type WidgetConfig, type FormFieldChanged } from '@lifi/widget';
 import { EthereumProvider } from '@lifi/widget-provider-ethereum';
+import { SolanaProvider } from '@lifi/widget-provider-solana';
 import { WalletManagementEvent, walletManagementEvents } from '@lifi/wallet-management';
 import { ArrowUpRight, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
@@ -23,6 +24,13 @@ const networks = [
   { id: 100, name: 'Gnosis', gecko: 'xdai' },
   { id: 534352, name: 'Scroll', gecko: 'scroll' },
   { id: 59144, name: 'Linea', gecko: 'linea' },
+  { id: 1151111081099710, name: 'Solana', gecko: 'solana' },
+  { id: 130, name: 'Unichain', gecko: 'unichain' },
+  { id: 146, name: 'Sonic', gecko: 'sonic' },
+  { id: 324, name: 'zkSync', gecko: 'zksync' },
+  { id: 5000, name: 'Mantle', gecko: 'mantle' },
+  { id: 81457, name: 'Blast', gecko: 'blast' },
+  { id: 80094, name: 'Berachain', gecko: 'berachain' },
 ] as const;
 
 type Pool = { id: string; attributes: { name: string; address: string; reserve_in_usd: string | null; volume_usd: { h24?: string } } };
@@ -38,18 +46,26 @@ function Pools() {
   const [networkId, setNetworkId] = useState(1);
   const [pools, setPools] = useState<Pool[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [error, setError] = useState('Pool data is unavailable. Please try again later.');
   const network = networks.find(item => item.id === networkId)!;
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`https://api.geckoterminal.com/api/v2/networks/${network.gecko}/trending_pools?page=1`, { signal: controller.signal, headers: { accept: 'application/json;version=20230302' } })
-      .then(response => { if (!response.ok) throw new Error(`Pool service returned ${response.status}`); return response.json(); })
-      .then((body: { data?: Pool[] }) => { if (!controller.signal.aborted) { setPools((body.data ?? []).slice(0, 10)); setState('ready'); } })
-      .catch(() => { if (!controller.signal.aborted) { setPools([]); setState('error'); } });
+    async function load() {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await fetch(`https://api.geckoterminal.com/api/v2/networks/${network.gecko}/trending_pools?page=1`, { signal: controller.signal, headers: { accept: 'application/json;version=20230302' } });
+        if (response.status === 429 && attempt === 0) { await new Promise(resolve => window.setTimeout(resolve, 2500)); continue; }
+        if (!response.ok) throw new Error(response.status === 429 ? 'Pool data is rate-limited. Try this network again shortly.' : `Pool data request failed (${response.status}).`);
+        const body: { data?: Pool[] } = await response.json();
+        if (!controller.signal.aborted) { setPools((body.data ?? []).slice(0, 10)); setState('ready'); }
+        return;
+      }
+    }
+    load().catch((reason: unknown) => { if (!controller.signal.aborted) { setPools([]); setError(reason instanceof Error ? reason.message : 'Pool data is unavailable. Please try again later.'); setState('error'); } });
     return () => controller.abort();
   }, [network.gecko]);
   return <section className="live-pools" aria-label="Live liquidity pools"><div className="pools-heading"><div><h2>Trending pools</h2><p>Live liquidity and 24-hour volume from GeckoTerminal. Open a pool to manage liquidity at its source.</p></div><select aria-label="Pool network" value={networkId} onChange={event => { setState('loading'); setPools([]); setNetworkId(Number(event.target.value)); }}>{networks.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
     {state === 'loading' && <p className="pool-status" role="status">Loading live pools…</p>}
-    {state === 'error' && <p className="pool-status" role="alert">Pool data is unavailable. Please try again later.</p>}
+    {state === 'error' && <p className="pool-status" role="alert">{error}</p>}
     {state === 'ready' && pools.length === 0 && <p className="pool-status">No pools returned for this network.</p>}
     {state === 'ready' && pools.length > 0 && <div className="pool-list"><div className="pool-column-head"><span>Pool</span><span>Liquidity</span><span>24h volume</span></div>{pools.map(pool => <a className="pool-row" key={pool.id} href={`https://www.geckoterminal.com/${network.gecko}/pools/${encodeURIComponent(pool.attributes.address)}`} target="_blank" rel="noopener noreferrer"><strong>{pool.attributes.name}</strong><span>{money(pool.attributes.reserve_in_usd)}</span><span>{money(pool.attributes.volume_usd?.h24)} <ArrowUpRight size={15} /></span></a>)}</div>}
     <p className="pool-source">Source: <a href="https://www.geckoterminal.com/" target="_blank" rel="noopener noreferrer">GeckoTerminal <ArrowUpRight size={13} /></a>. Pool data can change quickly.</p>
@@ -62,15 +78,15 @@ export function LiveExchange({ initialView }: { initialView?: View } = {}) {
   const view = initialView ?? legacyView;
   const [theme, setTheme] = useState<Theme>('dark');
   const [chartVisible, setChartVisible] = useState(false);
-  const [account, setAccount] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<{ evm: string | null; solana: string | null }>({ evm: null, solana: null });
   const [chartTokens, setChartTokens] = useState({ fromChain: 1, fromToken: '0x0000000000000000000000000000000000000000', toChain: 1, toToken: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' });
   useEffect(() => {
-    const onConnected = ({ address }: { address: string }) => setAccount(address);
-    const onDisconnected = () => setAccount(null);
+    const onConnected = ({ address, chainType }: { address: string; chainType: string }) => setAccounts(previous => ({ ...previous, [chainType === 'SVM' ? 'solana' : 'evm']: address }));
+    const onDisconnected = ({ chainType }: { chainType: string }) => setAccounts(previous => ({ ...previous, [chainType === 'SVM' ? 'solana' : 'evm']: null }));
     walletManagementEvents.on(WalletManagementEvent.WalletConnected, onConnected);
     walletManagementEvents.on(WalletManagementEvent.WalletDisconnected, onDisconnected);
     const injected = (window as Window & { ethereum?: { request: (args: { method: string }) => Promise<unknown> } }).ethereum;
-    injected?.request({ method: 'eth_accounts' }).then(value => { if (Array.isArray(value) && typeof value[0] === 'string') setAccount(previous => previous ?? value[0]); }).catch(() => {});
+    injected?.request({ method: 'eth_accounts' }).then(value => { if (Array.isArray(value) && typeof value[0] === 'string') setAccounts(previous => ({ ...previous, evm: previous.evm ?? value[0] })); }).catch(() => {});
     return () => { walletManagementEvents.off(WalletManagementEvent.WalletConnected, onConnected); walletManagementEvents.off(WalletManagementEvent.WalletDisconnected, onDisconnected); };
   }, []);
   useEffect(() => {
@@ -99,11 +115,11 @@ export function LiveExchange({ initialView }: { initialView?: View } = {}) {
     fromChain: 1, toChain: view === 'bridge' ? 42161 : 1,
     fromToken: '0x0000000000000000000000000000000000000000',
     toToken: view === 'bridge' ? '0x0000000000000000000000000000000000000000' : '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    providers: [EthereumProvider()],
+    providers: [EthereumProvider(), SolanaProvider()],
     theme: { container: { border: '1px solid var(--border)', borderRadius: '16px', boxShadow: 'none' }, routesContainer: { borderRadius: '16px', boxShadow: 'none' }, colorSchemes: { dark: { palette: { primary: { main: '#7584ff' }, background: { default: '#181b20', paper: '#20242a' }, text: { primary: '#f4f5f7', secondary: '#aab2bf' } } }, light: { palette: { primary: { main: '#4559dc' }, background: { default: '#ffffff', paper: '#f5f7fb' }, text: { primary: '#1b2333', secondary: '#626d80' } } } } },
   }), [theme, view]);
   function toggleTheme() { const next = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('arreyx-theme', next); setTheme(next); }
   return <div className="app-shell live-shell"><header className="header"><Link className="brand" href="/" aria-label="ArreyX home"><span className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 33 18 5h8L10 33zm20 0 6-11 11 11zM27 5h12L28 17z" fill="currentColor" /></svg></span>Arrey<span className="brand-x">X</span></Link><nav aria-label="Main navigation">{(['swap', 'bridge', 'pools'] as View[]).map(item => <Link key={item} href={`/${item}`} className={view === item ? 'active' : ''} aria-current={view === item ? 'page' : undefined}>{item[0].toUpperCase() + item.slice(1)}</Link>)}</nav><div className="header-actions"><span className="environment">Live data</span><button className="theme-toggle" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>
-    <main className="live-main"><div className="page-heading"><div><h1>{view === 'swap' ? 'Swap' : view === 'bridge' ? 'Bridge' : 'Pools'}</h1><p>{view === 'swap' ? 'Compare live routes and exchange assets.' : view === 'bridge' ? 'Move assets between supported networks with live quotes.' : 'Explore live liquidity across supported networks.'}</p></div>{view === 'swap' && <button className="chart-toggle" aria-expanded={chartVisible} onClick={() => setChartVisible(value => !value)}>{chartVisible ? 'Hide chart' : 'Show chart'}</button>}</div>{view === 'pools' ? <Pools /> : <div className="swap-market-layout"><div className="widget-wrap">{hydrated ? <LiFiWidget key={`${view}-${theme}`} integrator="ArreyX" config={config} /> : <div className="widget-loading" role="status">Loading live exchange…</div>}</div><div className="market-sidebar"><WalletBalances key={chartTokens.fromChain} account={account} selection={chartTokens} />{view === 'swap' && chartVisible && <LiveChart selection={chartTokens} />}</div></div>}</main>
+    <main className="live-main"><div className="page-heading"><div><h1>{view === 'swap' ? 'Swap' : view === 'bridge' ? 'Bridge' : 'Pools'}</h1><p>{view === 'swap' ? 'Compare live routes and exchange assets.' : view === 'bridge' ? 'Move assets between supported networks with live quotes.' : 'Explore live liquidity across supported networks.'}</p></div>{view === 'swap' && <button className="chart-toggle" aria-expanded={chartVisible} onClick={() => setChartVisible(value => !value)}>{chartVisible ? 'Hide chart' : 'Show chart'}</button>}</div>{view === 'pools' ? <Pools /> : <div className="swap-market-layout"><div className="widget-wrap">{hydrated ? <LiFiWidget key={`${view}-${theme}`} integrator="ArreyX" config={config} /> : <div className="widget-loading" role="status">Loading live exchange…</div>}</div><div className="market-sidebar"><WalletBalances key={chartTokens.fromChain} accounts={accounts} selection={chartTokens} />{view === 'swap' && chartVisible && <LiveChart selection={chartTokens} />}</div></div>}</main>
     <footer><span>© {new Date().getFullYear()} ArreyX</span><span>Quotes, balances and transactions are provided by LI.FI and connected wallets.</span></footer></div>;
 }
