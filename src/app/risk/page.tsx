@@ -1,0 +1,10 @@
+import { InformationPage } from '@/components/information-page';
+
+export default function RiskPage() { return <InformationPage title="Risk disclosure" intro="On-chain trading, bridging, orders, and liquidity positions can result in a total loss." updated="October 2, 2026" sections={[
+  { title: 'Trading and routing', paragraphs: ['Prices and routes change continuously. Slippage, price impact, gas costs, MEV, token taxes, transfer restrictions, and insufficient liquidity can change the final result or cause a transaction to fail. A quote is not a guarantee.'] },
+  { title: 'Tokens and approvals', paragraphs: ['Token contracts can be malicious, upgradeable, pausable, fee-charging, or impossible to sell. Security APIs are incomplete signals. Approvals let a spender transfer tokens up to the approved amount; inspect the exact token and spender and revoke approvals you no longer need.'] },
+  { title: 'Bridges and cross-chain execution', paragraphs: ['Cross-chain transactions add smart-contract, validator, relayer, finality, and destination-network risk. Completion may be delayed and recovery can require the underlying bridge provider.'] },
+  { title: 'Liquidity positions', paragraphs: ['Liquidity providers face impermanent loss, adverse selection, pool and token contract risk, and gas costs. Full-range positions may be less capital efficient. Creating a pool with an incorrect initial price can immediately expose deposited assets to arbitrage.'] },
+  { title: 'Limit and TWAP orders', paragraphs: ['Signed orders may remain valid until expiry or cancellation. Market movement, solver availability, liquidity, approvals, and network conditions affect execution. Time-weighted orders reduce timing concentration but do not guarantee a favorable average price.'] },
+  { title: 'Operational risk', paragraphs: ['Wallets, RPC endpoints, indexes, APIs, browsers, and protocol interfaces can be unavailable or compromised. Confirm contract addresses and transaction details independently when material value is involved.'] },
+]} />; }
