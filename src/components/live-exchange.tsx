@@ -5,12 +5,12 @@ import { LiFiWidget, WidgetEvent, widgetEvents, type WidgetConfig, type FormFiel
 import { EthereumProvider } from '@lifi/widget-provider-ethereum';
 import { SolanaProvider } from '@lifi/widget-provider-solana';
 import { WalletManagementEvent, walletManagementEvents } from '@lifi/wallet-management';
-import { Activity, ArrowLeft, ArrowRight, Droplets, Moon, Sun, Wallet } from 'lucide-react';
+import { Activity, ArrowLeft, ArrowRight, Droplets, Moon, Search, Sun, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { WalletBalances } from './wallet-balances';
 
-type View = 'swap' | 'bridge' | 'pools';
+type View = 'swap' | 'bridge' | 'pools' | 'activity';
 type Theme = 'dark' | 'light';
 type TokenSelection = { fromChain: number; fromToken: string; toChain: number; toToken: string };
 
@@ -93,9 +93,17 @@ function Pools() {
   const [networkId, setNetworkId] = useState(1);
   const [selected, setSelected] = useState<{ networkId: number; address: string } | null>(null);
   const [pools, setPools] = useState<Pool[]>([]);
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<'trending' | 'liquidity' | 'volume'>('trending');
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState('Pool data is unavailable. Please try again later.');
   const network = networks.find(item => item.id === networkId)!;
+  const visiblePools = useMemo(() => {
+    const filtered = pools.filter(pool => pool.attributes.name.toLowerCase().includes(query.trim().toLowerCase()));
+    if (sort === 'trending') return filtered;
+    const value = (pool: Pool) => Number(sort === 'liquidity' ? pool.attributes.reserve_in_usd : pool.attributes.volume_usd?.h24) || 0;
+    return [...filtered].sort((a, b) => value(b) - value(a));
+  }, [pools, query, sort]);
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const params = new URLSearchParams(window.location.search);
@@ -122,11 +130,12 @@ function Pools() {
     return () => controller.abort();
   }, [network.gecko]);
   if (selected) { const selectedNetwork = networks.find(item => item.id === selected.networkId) ?? network; return <PoolDetail network={selectedNetwork} address={selected.address} onBack={() => { setSelected(null); router.push('/pools'); }} />; }
-  return <section className="live-pools" aria-label="Live liquidity pools"><div className="pools-heading"><div><h2>Trending pools</h2><p>Live liquidity and 24-hour volume from GeckoTerminal. Open any pool for details inside ArreyX.</p></div><select aria-label="Pool network" value={networkId} onChange={event => { setState('loading'); setPools([]); setNetworkId(Number(event.target.value)); }}>{networks.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
+  return <section className="live-pools" aria-label="Live liquidity pools"><div className="pools-heading"><div><h2>Explore pools</h2><p>Search current trending pools, compare liquidity and volume, then open full details inside ArreyX.</p></div></div><div className="pool-controls"><label className="pool-search"><Search size={16} /><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search pools" aria-label="Search pools" /></label><select aria-label="Pool network" value={networkId} onChange={event => { setState('loading'); setPools([]); setQuery(''); setNetworkId(Number(event.target.value)); }}>{networks.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select><select aria-label="Sort pools" value={sort} onChange={event => setSort(event.target.value as 'trending' | 'liquidity' | 'volume')}><option value="trending">Trending</option><option value="liquidity">Liquidity</option><option value="volume">24h volume</option></select></div>
     {state === 'loading' && <p className="pool-status" role="status">Loading live pools…</p>}
     {state === 'error' && <p className="pool-status" role="alert">{error}</p>}
     {state === 'ready' && pools.length === 0 && <p className="pool-status">No pools returned for this network.</p>}
-    {state === 'ready' && pools.length > 0 && <div className="pool-list"><div className="pool-column-head"><span>Pool</span><span>Liquidity</span><span>24h volume</span></div>{pools.map(pool => <Link className="pool-row" key={pool.id} href={`/pools?network=${network.gecko}&pool=${encodeURIComponent(pool.attributes.address)}`} onClick={() => setSelected({ networkId, address: pool.attributes.address })}><strong>{pool.attributes.name}</strong><span>{money(pool.attributes.reserve_in_usd)}</span><span>{money(pool.attributes.volume_usd?.h24)} <ArrowRight size={15} /></span></Link>)}</div>}
+    {state === 'ready' && pools.length > 0 && visiblePools.length === 0 && <p className="pool-status">No pools match that search.</p>}
+    {state === 'ready' && visiblePools.length > 0 && <div className="pool-list"><div className="pool-column-head"><span>Pool</span><span>Liquidity</span><span>24h volume</span></div>{visiblePools.map(pool => <Link className="pool-row" key={pool.id} href={`/pools?network=${network.gecko}&pool=${encodeURIComponent(pool.attributes.address)}`} onClick={() => setSelected({ networkId, address: pool.attributes.address })}><strong>{pool.attributes.name}</strong><span>{money(pool.attributes.reserve_in_usd)}</span><span>{money(pool.attributes.volume_usd?.h24)} <ArrowRight size={15} /></span></Link>)}</div>}
     <p className="pool-source">Live market data from GeckoTerminal. Pool values can change quickly.</p>
   </section>;
 }
@@ -209,8 +218,25 @@ export function LiveExchange({ initialView }: { initialView?: View } = {}) {
     if (widgetRef.current) observer.observe(widgetRef.current, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [hydrated]);
-  const activeAccount = chartTokens.fromChain === 1151111081099710 ? accounts.solana : accounts.evm;
-  return <div className="app-shell live-shell"><header className="header"><Link className="brand" href="/" aria-label="ArreyX home"><span className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 33 18 5h8L10 33zm20 0 6-11 11 11zM27 5h12L28 17z" fill="currentColor" /></svg></span>Arrey<span className="brand-x">X</span></Link><nav aria-label="Main navigation">{(['swap', 'bridge', 'pools'] as View[]).map(item => <Link key={item} href={`/${item}`} className={view === item ? 'active' : ''} aria-current={view === item ? 'page' : undefined}>{item[0].toUpperCase() + item.slice(1)}</Link>)}</nav><div className="header-actions"><button className="wallet-button" data-arrey-wallet aria-label={activeAccount ? `Wallet ${activeAccount.slice(0, 6)}…${activeAccount.slice(-4)}` : 'Connect wallet'} onClick={openWallet}><Wallet size={16} /><span>{activeAccount ? `${activeAccount.slice(0, 6)}…${activeAccount.slice(-4)}` : 'Connect wallet'}</span></button><button className="theme-toggle" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>
-    <main className="live-main"><div className="page-heading"><div><h1>{view === 'swap' ? 'Swap' : view === 'bridge' ? 'Bridge' : 'Pools'}</h1><p>{view === 'swap' ? 'Compare live routes and exchange assets.' : view === 'bridge' ? 'Move assets between supported networks with live quotes.' : 'Explore live liquidity across supported networks.'}</p></div></div>{view === 'pools' ? <Pools /> : <div className="swap-market-layout"><div className="widget-column"><div className="widget-wrap" ref={widgetRef}>{hydrated ? <LiFiWidget key={`${view}-${theme}-${widgetDefaults.fromChain}-${widgetDefaults.fromToken}-${widgetDefaults.toToken}`} integrator="ArreyX" config={config} /> : <div className="widget-loading" role="status">Loading live exchange…</div>}</div><WalletBalances key={chartTokens.fromChain} accounts={accounts} selection={chartTokens} /></div></div>}</main>
+  const connected = Boolean(accounts.evm || accounts.solana);
+  useEffect(() => {
+    if (view !== 'activity' || !hydrated || !connected) return;
+    const openHistory = () => {
+      const button = widgetRef.current?.querySelector('[data-testid="HistoryIcon"]')?.closest('button');
+      if (!button) return false;
+      button.click();
+      return true;
+    };
+    if (openHistory()) return;
+    const observer = new MutationObserver(() => { if (openHistory()) observer.disconnect(); });
+    if (widgetRef.current) observer.observe(widgetRef.current, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [connected, hydrated, view]);
+  const activeAccount = view === 'activity' ? accounts.evm ?? accounts.solana : chartTokens.fromChain === 1151111081099710 ? accounts.solana : accounts.evm;
+  const title = view === 'swap' ? 'Swap' : view === 'bridge' ? 'Bridge' : view === 'pools' ? 'Pools' : 'Activity';
+  const subtitle = view === 'swap' ? 'Compare live routes and exchange assets.' : view === 'bridge' ? 'Move assets between supported networks with live quotes.' : view === 'pools' ? 'Explore live liquidity across supported networks.' : 'Review real transactions for your connected wallet.';
+  const widget = hydrated ? <LiFiWidget key={`${view}-${theme}-${widgetDefaults.fromChain}-${widgetDefaults.fromToken}-${widgetDefaults.toToken}`} integrator="ArreyX" config={config} /> : <div className="widget-loading" role="status">Loading live exchange…</div>;
+  return <div className="app-shell live-shell"><header className="header"><Link className="brand" href="/" aria-label="ArreyX home"><span className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 33 18 5h8L10 33zm20 0 6-11 11 11zM27 5h12L28 17z" fill="currentColor" /></svg></span>Arrey<span className="brand-x">X</span></Link><nav aria-label="Main navigation">{(['swap', 'bridge', 'pools', 'activity'] as View[]).map(item => <Link key={item} href={`/${item}`} className={view === item ? 'active' : ''} aria-current={view === item ? 'page' : undefined}>{item[0].toUpperCase() + item.slice(1)}</Link>)}</nav><div className="header-actions"><button className="wallet-button" data-arrey-wallet aria-label={activeAccount ? `Wallet ${activeAccount.slice(0, 6)}…${activeAccount.slice(-4)}` : 'Connect wallet'} onClick={openWallet}><Wallet size={16} /><span>{activeAccount ? `${activeAccount.slice(0, 6)}…${activeAccount.slice(-4)}` : 'Connect wallet'}</span></button><button className="theme-toggle" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>
+    <main className="live-main"><div className="page-heading"><div><h1>{title}</h1><p>{subtitle}</p></div></div>{view === 'pools' ? <Pools /> : view === 'activity' ? <div className="activity-view">{!connected && <section className="activity-connect"><span className="activity-connect-icon"><Activity size={24} /></span><h2>Connect to view activity</h2><p>Your completed and in-progress LI.FI transactions appear here after you connect the wallet that created them.</p><button className="home-primary" onClick={openWallet}><Wallet size={17} /> Connect wallet</button></section>}<div className={`widget-wrap activity-widget${connected ? '' : ' activity-widget-hidden'}`} aria-hidden={!connected} ref={widgetRef}>{widget}</div></div> : <div className="swap-market-layout"><div className="widget-column"><div className="widget-wrap" ref={widgetRef}>{widget}</div><WalletBalances key={chartTokens.fromChain} accounts={accounts} selection={chartTokens} /></div></div>}</main>
     <footer><span>© {new Date().getFullYear()} ArreyX</span><span>Quotes, balances and transactions are provided by LI.FI and connected wallets.</span></footer></div>;
 }

@@ -1,6 +1,6 @@
 # ArreyX
 
-A swap, bridge and pool-discovery interface for sixteen EVM networks and Solana. Swaps and bridges use the LI.FI Widget v4 with EVM and Solana wallet providers for live token catalogs, routes, fees, execution and transaction tracking. The balance panel reads the connected address's native coin and selected tokens from public network RPCs. Pool discovery and the optional market chart use GeckoTerminal's public API.
+A swap, bridge, activity and pool-discovery interface for sixteen EVM networks and Solana. Swaps and bridges use the LI.FI Widget v4 with EVM and Solana wallet providers for live token catalogs, routes, fees, execution and transaction tracking. The compact balance view reads the connected address's native coin and selected tokens from public network RPCs. Searchable pool discovery and internal pool details use GeckoTerminal's public API.
 
 ## Run
 
@@ -27,7 +27,7 @@ The interface offers Ethereum, Arbitrum, Base, BNB Chain, OP Mainnet, Polygon, A
 
 The Pools tab shows current trending pools, liquidity and volume from GeckoTerminal and links to each pool's page. Liquidity deposits and withdrawals happen at the pool's source; ArreyX does not initiate them. GeckoTerminal's public API is rate-limited, so its data can sometimes be unavailable.
 
-The balance panel shows the native coin and selected swap or bridge tokens on the chosen network, including Solana SPL token mints when a Solana wallet is connected. It is not a complete portfolio or a fiat valuation; failed RPC reads are shown as unavailable. The Swap view also has a chart that is hidden by default. When opened, it follows the selected source token and network, preferring a pool for the selected pair when one is available. Its candles refresh every minute while open. The selected LI.FI route may use other pools and have a different executable price.
+The compact balance view shows the native coin and selected swap or bridge tokens on the chosen network, including Solana SPL token mints when a Solana wallet is connected. It is not a complete portfolio or a fiat valuation; failed RPC reads are shown as unavailable. The Activity view uses LI.FI's connected-wallet history and active route state. The Pools view searches and sorts the current trending results returned by GeckoTerminal and opens real details inside ArreyX.
 
 Public RPCs are used by the widget unless a dedicated RPC is configured. Production operators should configure authenticated RPC endpoints and monitor provider availability. Always review token, network, minimum received and transaction details in the wallet before signing.
 
