@@ -29,14 +29,14 @@ export function useEvmWallet() {
   }, []);
 
   useEffect(() => {
-    refresh().catch(() => {});
+    const frame = requestAnimationFrame(() => { refresh().catch(() => {}); });
     const provider = injectedProvider();
-    if (!provider?.on) return;
+    if (!provider?.on) return () => cancelAnimationFrame(frame);
     const accountsChanged = (...args: unknown[]) => setAccount(Array.isArray(args[0]) && typeof args[0][0] === 'string' ? args[0][0] : null);
     const chainChanged = (...args: unknown[]) => setChainId(typeof args[0] === 'string' ? Number.parseInt(args[0], 16) : null);
     provider.on('accountsChanged', accountsChanged);
     provider.on('chainChanged', chainChanged);
-    return () => { provider.removeListener?.('accountsChanged', accountsChanged); provider.removeListener?.('chainChanged', chainChanged); };
+    return () => { cancelAnimationFrame(frame); provider.removeListener?.('accountsChanged', accountsChanged); provider.removeListener?.('chainChanged', chainChanged); };
   }, [refresh]);
 
   const connect = useCallback(async () => {
