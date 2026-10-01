@@ -227,7 +227,7 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .balances-strip>button{display:grid;place-items:center;padding:5px;color:var(--muted)}
 .balances-strip>button:hover:not(:disabled){color:var(--text)}
 .header-actions .wallet-button{white-space:nowrap;padding:10px 14px}
-@media(max-width:740px){.live-shell .header{height:auto;min-height:112px;gap:0;padding:12px 14px 0;flex-wrap:wrap}.live-shell .brand{order:1}.live-shell .header-actions{order:2;gap:6px}.live-shell .header nav{order:3;width:100%;height:48px;gap:0;justify-content:space-around}.live-shell .header nav a{font-size:12px;padding:0 6px}.live-shell .wallet-button{width:38px;height:38px;padding:0;justify-content:center}.live-shell .wallet-button span{display:none}.live-shell .theme-toggle{width:38px;height:38px;padding:0}}
+@media(max-width:740px){.live-shell .header{height:auto;min-height:112px;gap:0;padding:12px 14px 0;flex-wrap:wrap}.live-shell .brand{order:1}.live-shell .header-actions{order:2;gap:6px}.live-shell .header nav{order:3;width:100%;height:48px;gap:0;justify-content:space-around}.live-shell .header nav>a,.app-more summary{font-size:11px;padding:0 4px}.app-more-menu{right:-8px}.live-shell .wallet-button{width:38px;height:38px;padding:0;justify-content:center}.live-shell .wallet-button span{display:none}.live-shell .theme-toggle{width:38px;height:38px;padding:0}}
 .market-sidebar{min-width:0;display:grid;gap:20px}
 .balances-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;min-width:0}
 .balances-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -247,6 +247,14 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .balances-note{font-size:11px;line-height:1.6;color:var(--muted);margin-top:8px}
 .chart-toggle{align-self:center;border:1px solid var(--border);border-radius:9px;padding:10px 15px;color:var(--text);background:var(--surface);font-size:12px;font-weight:600;white-space:nowrap}
 .live-shell .header nav a{display:inline-flex;align-items:center}
+.app-navigation{position:relative}
+.app-more{height:100%;position:relative}
+.app-more summary{height:100%;display:flex;align-items:center;cursor:pointer;color:var(--muted);font-size:13px;font-weight:550;list-style:none;border-bottom:2px solid transparent;padding:0 4px}
+.app-more summary::-webkit-details-marker{display:none}
+.app-more.active summary,.app-more[open] summary{color:var(--text);border-bottom-color:#6f7cf7}
+.app-more-menu{position:absolute;z-index:50;top:calc(100% + 8px);right:0;min-width:150px;padding:7px;background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 16px 38px #0004}
+.app-more-menu a{display:flex!important;height:auto!important;padding:10px 12px!important;border:0!important;border-radius:7px;font-size:12px!important}
+.app-more-menu a:hover,.app-more-menu a.active{background:var(--raised);color:var(--text)}
 .chart-toggle:hover{background:var(--raised)}
 .swap-market-layout>.widget-wrap{min-width:0}
 .market-chart{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;min-width:0}
