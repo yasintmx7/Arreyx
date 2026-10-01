@@ -3,5 +3,6 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "out",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "redirects": [{ "source": "/app", "destination": "/swap", "permanent": true }]
 }

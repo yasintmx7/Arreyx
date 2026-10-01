@@ -1,6 +1,6 @@
 # ArreyX
 
-A swap, bridge, activity and pool-discovery interface for sixteen EVM networks and Solana. Swaps and bridges use the LI.FI Widget v4 with EVM and Solana wallet providers for live token catalogs, routes, fees, execution and transaction tracking. The compact balance view reads the connected address's native coin and selected tokens from public network RPCs. Searchable pool discovery and internal pool details use GeckoTerminal's public API.
+A self-custodial trading and asset-management interface. ArreyX combines LI.FI swaps and bridges, CoW Protocol limit and TWAP orders, Uniswap V3 pool creation and full-range liquidity, Blockscout portfolios, GeckoTerminal pool discovery, GoPlus token checks, allowance revocation, and transaction receipts.
 
 ## Run
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open the local address printed by Next.js. The home page explains the product; **Get started** and **Open app** lead to `/swap`. Swap, Bridge, and Pools also have direct routes at `/swap`, `/bridge`, and `/pools`; the older `/app` route still works. The build is a static export for Vercel.
+Open the local address printed by Next.js. The main routes are `/swap`, `/bridge`, `/pools`, `/portfolio`, `/orders`, `/liquidity`, `/safety`, and `/activity`. Vercel redirects the older `/app` path to `/swap`. The build is a static export.
 
 ## Verify
 
@@ -25,10 +25,10 @@ npm run build
 
 The interface offers Ethereum, Arbitrum, Base, BNB Chain, OP Mainnet, Polygon, Avalanche, Gnosis, Scroll, Linea, Solana, Unichain, Sonic, zkSync, Mantle, Blast and Berachain. LI.FI's live chain and token catalog determines what is available for a given pair. Routes and output amounts require a current provider response; nothing is fabricated when a provider is unavailable. A compatible wallet for the selected ecosystem is required to show balances and sign a transaction. The application never collects seed phrases or private keys.
 
-The Pools tab shows current trending pools, liquidity and volume from GeckoTerminal and links to each pool's page. Liquidity deposits and withdrawals happen at the pool's source; ArreyX does not initiate them. GeckoTerminal's public API is rate-limited, so its data can sometimes be unavailable.
+Pools shows current GeckoTerminal data and internal details. Liquidity reads Uniswap V3 token and pool contracts on Ethereum or Base, requests exact ERC-20 approvals, and sends pool creation or position-minting calldata to the official position manager. Creating a pool requires an initial price; entering an incorrect price can expose deposits to immediate arbitrage.
 
-The compact balance view shows the native coin and selected swap or bridge tokens on the chosen network, including Solana SPL token mints when a Solana wallet is connected. It is not a complete portfolio or a fiat valuation; failed RPC reads are shown as unavailable. The Activity view uses LI.FI's connected-wallet history and active route state. The Pools view searches and sorts the current trending results returned by GeckoTerminal and opens real details inside ArreyX.
+Portfolio enumerates indexed balances for the supported Blockscout networks and totals only assets with an available exchange rate. Safety requests live GoPlus fields and can inspect and revoke an exact ERC-20 token/spender allowance. Activity combines LI.FI route history with browser-saved receipts for direct liquidity and approval transactions. Orders embeds CoW Protocol's live limit and TWAP interface with exact approvals and price-impact blocking.
 
-Public RPCs are used by the widget unless a dedicated RPC is configured. Production operators should configure authenticated RPC endpoints and monitor provider availability. Always review token, network, minimum received and transaction details in the wallet before signing.
+Public RPCs are used unless dedicated `NEXT_PUBLIC_RPC_*` endpoints are configured. WalletConnect support is enabled by `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`. Apply origin restrictions and quotas at the RPC provider. Always review token contracts, network, recipient, approvals, minimum received, pool price, and wallet transaction details before signing.
 
-Sources: [LI.FI Widget](https://docs.li.fi/widget/overview), [LI.FI configuration](https://docs.li.fi/widget/configure-widget), [GeckoTerminal API](https://apiguide.geckoterminal.com/).
+Sources: [LI.FI Widget](https://docs.li.fi/widget/overview), [CoW Swap Widget](https://www.npmjs.com/package/@cowprotocol/widget-react), [Uniswap V3 SDK](https://docs.uniswap.org/sdk/v3/overview), [GeckoTerminal API](https://apiguide.geckoterminal.com/), [GoPlus](https://docs.gopluslabs.io/), and [Blockscout API](https://docs.blockscout.com/devs/apis/rest).

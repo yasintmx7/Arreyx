@@ -250,9 +250,10 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .live-shell .header nav a{display:inline-flex;align-items:center}
 .app-navigation{position:relative}
 .app-more{height:100%;position:relative}
-.app-more summary{height:100%;display:flex;align-items:center;cursor:pointer;color:var(--muted);font-size:13px;font-weight:550;list-style:none;border-bottom:2px solid transparent;padding:0 4px}
+.app-more summary{height:100%;display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:550;list-style:none;border-bottom:2px solid transparent;padding:0 4px}
 .app-more summary::-webkit-details-marker{display:none}
 .app-more.active summary,.app-more[open] summary{color:var(--text);border-bottom-color:#6f7cf7}
+.app-more[open] summary svg{transform:rotate(180deg)}
 .app-more-menu{position:absolute;z-index:50;top:calc(100% + 8px);right:0;min-width:150px;padding:7px;background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 16px 38px #0004}
 .app-more-menu a{display:flex!important;height:auto!important;padding:10px 12px!important;border:0!important;border-radius:7px;font-size:12px!important}
 .app-more-menu a:hover,.app-more-menu a.active{background:var(--raised);color:var(--text)}
@@ -361,7 +362,7 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .section-heading h2,.home-cta h2{font-size:clamp(29px,3.4vw,44px);font-weight:550;letter-spacing:-.045em;margin:16px 0 12px}
 .section-heading p,.home-cta p{font-size:15px;line-height:1.65;color:var(--muted)}
 .feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.feature-card{position:relative;min-height:230px;background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:24px;display:flex;flex-direction:column}
+.feature-card{position:relative;min-height:210px;background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:22px;display:flex;flex-direction:column}
 .feature-card:hover{border-color:#6678d8;transform:translateY(-2px);transition:transform .18s ease,border-color .18s ease}
 .feature-icon,.step-icon{width:44px;height:44px;display:grid;place-items:center;color:#b1bdff;background:#303954;border-radius:11px}
 .feature-number{position:absolute;right:24px;top:29px;color:var(--muted);font-size:12px}
