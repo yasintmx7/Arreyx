@@ -8,6 +8,7 @@ import { createPublicClient, encodeFunctionData, erc20Abi, formatUnits, getAddre
 import { ToolShell } from './tool-shell';
 import { useEvmWallet } from '@/hooks/use-evm-wallet';
 import { rpcUrlFor } from '@/lib/network-config';
+import { confirmTransaction, saveTransaction } from '@/lib/transaction-log';
 
 const safetyNetworks = {
   1: { name: 'Ethereum', chain: mainnet, explorer: 'https://etherscan.io' },
@@ -81,7 +82,9 @@ export function SafetyPage() {
       setBusy('revoke'); setError(null);
       const client = createPublicClient({ chain: network.chain, transport: http(rpcUrlFor(networkId)) });
       const hash = await wallet.provider.request<`0x${string}`>({ method: 'eth_sendTransaction', params: [{ from: wallet.account, to: getAddress(token), data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [getAddress(spender), 0n] }), value: '0x0' }] });
+      saveTransaction({ hash, title: `Revoke ${allowance.symbol} allowance`, network: network.name, explorer: `${network.explorer}/tx/`, createdAt: Date.now(), status: 'pending' });
       await client.waitForTransactionReceipt({ hash });
+      confirmTransaction(hash);
       setAllowance({ ...allowance, raw: 0n, formatted: '0' });
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Approval revocation failed.'); }
     finally { setBusy(null); }

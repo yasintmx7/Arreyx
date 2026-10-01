@@ -9,6 +9,7 @@ import { createPublicClient, encodeFunctionData, erc20Abi, getAddress, http, isA
 import { ToolShell } from './tool-shell';
 import { useEvmWallet } from '@/hooks/use-evm-wallet';
 import { rpcUrlFor } from '@/lib/network-config';
+import { confirmTransaction, saveTransaction } from '@/lib/transaction-log';
 
 const deployments = {
   1: { chain: mainnet, name: 'Ethereum', explorer: 'https://etherscan.io/tx/', defaults: ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'] },
@@ -61,10 +62,12 @@ export function LiquidityPage() {
         ]);
         return { address: checked, symbol, decimals };
       };
-      const sendAndWait = async (request: { to: `0x${string}`; data: `0x${string}`; value?: `0x${string}` }) => {
+      const sendAndWait = async (request: { to: `0x${string}`; data: `0x${string}`; value?: `0x${string}` }, title: string) => {
         if (!wallet.provider || !wallet.account) throw new Error('Connect an EVM wallet first.');
         const hash = await wallet.provider.request<`0x${string}`>({ method: 'eth_sendTransaction', params: [{ from: wallet.account, to: request.to, data: request.data, value: request.value ?? '0x0' }] });
+        saveTransaction({ hash, title, network: deployment.name, explorer: deployment.explorer, createdAt: Date.now(), status: 'pending' });
         await client.waitForTransactionReceipt({ hash });
+        confirmTransaction(hash);
         return hash;
       };
       const approveIfNeeded = async (token: TokenMeta, amount: bigint, spender: `0x${string}`) => {
@@ -74,10 +77,10 @@ export function LiquidityPage() {
         if (allowance >= amount) return;
         if (allowance > 0n) {
           setTx({ kind: 'working', message: `Resetting ${token.symbol} approval…` });
-          await sendAndWait({ to: token.address, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [spender, 0n] }) });
+          await sendAndWait({ to: token.address, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [spender, 0n] }) }, `Reset ${token.symbol} approval`);
         }
         setTx({ kind: 'working', message: `Approving exact ${token.symbol} amount…` });
-        await sendAndWait({ to: token.address, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [spender, amount] }) });
+        await sendAndWait({ to: token.address, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [spender, amount] }) }, `Approve ${token.symbol} for liquidity`);
       };
       const [metaA, metaB] = await Promise.all([readToken(tokenA), readToken(tokenB)]);
       const sdkA = new Token(networkId, metaA.address, metaA.decimals, metaA.symbol);
@@ -113,7 +116,7 @@ export function LiquidityPage() {
       await approveIfNeeded(sdkA.equals(sdk0) ? metaB : metaA, amount1, manager);
       setTx({ kind: 'working', message: poolExists ? 'Adding liquidity to the live pool…' : 'Creating the pool and adding initial liquidity…' });
       const method = NonfungiblePositionManager.addCallParameters(position, { recipient: getAddress(wallet.account), deadline: Math.floor(Date.now() / 1000) + 1200, slippageTolerance: new Percent(Math.round(tolerance * 100), 10_000), createPool: !poolExists });
-      const hash = await sendAndWait({ to: manager, data: method.calldata as `0x${string}`, value: `0x${BigInt(method.value).toString(16)}` });
+      const hash = await sendAndWait({ to: manager, data: method.calldata as `0x${string}`, value: `0x${BigInt(method.value).toString(16)}` }, poolExists ? 'Add Uniswap V3 liquidity' : 'Create Uniswap V3 pool');
       setTx({ kind: 'success', hash, message: poolExists ? 'Liquidity position created.' : 'Pool and initial liquidity position created.' });
     } catch (reason) {
       setTx({ kind: 'error', message: reason instanceof Error ? reason.message : 'The liquidity transaction failed.' });

@@ -218,6 +218,7 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .activity-connect .home-primary{border:1px solid #7484ff}
 .activity-widget{min-height:520px}
 .activity-widget-hidden{position:absolute;width:1px;height:1px;min-height:0;overflow:hidden;clip-path:inset(50%)}
+.direct-activity{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px}.direct-activity>div:first-child h2{font-size:18px}.direct-activity>div:first-child p,.direct-recovery{color:var(--muted);font-size:11px;line-height:1.55;margin-top:5px}.direct-activity-list{margin-top:15px;border-top:1px solid var(--border)}.direct-activity-list a{display:grid;grid-template-columns:24px minmax(0,1fr) auto 16px;align-items:center;gap:9px;padding:13px 0;border-bottom:1px solid var(--border)}.direct-activity-list a>span{color:#efc56e}.direct-activity-list a>span.confirmed{color:var(--positive)}.direct-activity-list strong,.direct-activity-list small{display:block}.direct-activity-list small{color:var(--muted);font-size:9px;margin-top:3px}.direct-activity-list code{color:var(--muted);font-size:9px}.direct-recovery{margin-top:13px}
 .balances-strip{display:flex;align-items:center;gap:12px;min-height:45px;padding:7px 4px;color:var(--muted);font-size:12px}
 .balances-strip-label{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .balances-strip-list{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 12px;margin-left:auto;color:var(--text)}
