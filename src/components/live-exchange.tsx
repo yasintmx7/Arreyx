@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { LiFiWidget, WidgetEvent, widgetEvents, type WidgetConfig, type FormFieldChanged } from '@lifi/widget';
 import { EthereumProvider } from '@lifi/widget-provider-ethereum';
 import { SolanaProvider } from '@lifi/widget-provider-solana';
 import { WalletManagementEvent, walletManagementEvents } from '@lifi/wallet-management';
-import { ArrowUpRight, Moon, Sun } from 'lucide-react';
+import { ArrowUpRight, Moon, Sun, Wallet } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { LiveChart } from './live-chart';
 import { WalletBalances } from './wallet-balances';
 
@@ -73,12 +74,14 @@ function Pools() {
 }
 
 export function LiveExchange({ initialView }: { initialView?: View } = {}) {
+  const router = useRouter();
   const hydrated = useHydrated();
   const [legacyView, setLegacyView] = useState<View>('swap');
   const view = initialView ?? legacyView;
   const [theme, setTheme] = useState<Theme>('dark');
   const [chartVisible, setChartVisible] = useState(false);
   const [accounts, setAccounts] = useState<{ evm: string | null; solana: string | null }>({ evm: null, solana: null });
+  const widgetRef = useRef<HTMLDivElement>(null);
   const [chartTokens, setChartTokens] = useState({ fromChain: 1, fromToken: '0x0000000000000000000000000000000000000000', toChain: 1, toToken: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' });
   useEffect(() => {
     const onConnected = ({ address, chainType }: { address: string; chainType: string }) => setAccounts(previous => ({ ...previous, [chainType === 'SVM' ? 'solana' : 'evm']: address }));
@@ -119,7 +122,22 @@ export function LiveExchange({ initialView }: { initialView?: View } = {}) {
     theme: { container: { border: '1px solid var(--border)', borderRadius: '16px', boxShadow: 'none' }, routesContainer: { borderRadius: '16px', boxShadow: 'none' }, colorSchemes: { dark: { palette: { primary: { main: '#7584ff' }, background: { default: '#181b20', paper: '#20242a' }, text: { primary: '#f4f5f7', secondary: '#aab2bf' } } }, light: { palette: { primary: { main: '#4559dc' }, background: { default: '#ffffff', paper: '#f5f7fb' }, text: { primary: '#1b2333', secondary: '#626d80' } } } } },
   }), [theme, view]);
   function toggleTheme() { const next = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('arreyx-theme', next); setTheme(next); }
-  return <div className="app-shell live-shell"><header className="header"><Link className="brand" href="/" aria-label="ArreyX home"><span className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 33 18 5h8L10 33zm20 0 6-11 11 11zM27 5h12L28 17z" fill="currentColor" /></svg></span>Arrey<span className="brand-x">X</span></Link><nav aria-label="Main navigation">{(['swap', 'bridge', 'pools'] as View[]).map(item => <Link key={item} href={`/${item}`} className={view === item ? 'active' : ''} aria-current={view === item ? 'page' : undefined}>{item[0].toUpperCase() + item.slice(1)}</Link>)}</nav><div className="header-actions"><span className="environment">Live data</span><button className="theme-toggle" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>
-    <main className="live-main"><div className="page-heading"><div><h1>{view === 'swap' ? 'Swap' : view === 'bridge' ? 'Bridge' : 'Pools'}</h1><p>{view === 'swap' ? 'Compare live routes and exchange assets.' : view === 'bridge' ? 'Move assets between supported networks with live quotes.' : 'Explore live liquidity across supported networks.'}</p></div>{view === 'swap' && <button className="chart-toggle" aria-expanded={chartVisible} onClick={() => setChartVisible(value => !value)}>{chartVisible ? 'Hide chart' : 'Show chart'}</button>}</div>{view === 'pools' ? <Pools /> : <div className="swap-market-layout"><div className="widget-wrap">{hydrated ? <LiFiWidget key={`${view}-${theme}`} integrator="ArreyX" config={config} /> : <div className="widget-loading" role="status">Loading live exchange…</div>}</div><div className="market-sidebar"><WalletBalances key={chartTokens.fromChain} accounts={accounts} selection={chartTokens} />{view === 'swap' && chartVisible && <LiveChart selection={chartTokens} />}</div></div>}</main>
+  function openWallet() {
+    if (view === 'pools') { router.push('/swap?connect=1'); return; }
+    const button = Array.from(widgetRef.current?.querySelectorAll('button') ?? []).find(item => /connect wallet|0x[a-f\d]{4}/i.test(item.textContent ?? '') && !item.closest('[data-arrey-wallet]'));
+    button?.click();
+  }
+  useEffect(() => {
+    if (!hydrated || new URLSearchParams(window.location.search).get('connect') !== '1') return;
+    const observer = new MutationObserver(() => {
+      const button = Array.from(widgetRef.current?.querySelectorAll('button') ?? []).find(item => /connect wallet/i.test(item.textContent ?? ''));
+      if (button) { observer.disconnect(); button.click(); window.history.replaceState({}, '', '/swap'); }
+    });
+    if (widgetRef.current) observer.observe(widgetRef.current, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [hydrated]);
+  const activeAccount = chartTokens.fromChain === 1151111081099710 ? accounts.solana : accounts.evm;
+  return <div className="app-shell live-shell"><header className="header"><Link className="brand" href="/" aria-label="ArreyX home"><span className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 33 18 5h8L10 33zm20 0 6-11 11 11zM27 5h12L28 17z" fill="currentColor" /></svg></span>Arrey<span className="brand-x">X</span></Link><nav aria-label="Main navigation">{(['swap', 'bridge', 'pools'] as View[]).map(item => <Link key={item} href={`/${item}`} className={view === item ? 'active' : ''} aria-current={view === item ? 'page' : undefined}>{item[0].toUpperCase() + item.slice(1)}</Link>)}</nav><div className="header-actions"><span className="environment">Live data</span><button className="wallet-button" data-arrey-wallet aria-label={activeAccount ? `Wallet ${activeAccount.slice(0, 6)}…${activeAccount.slice(-4)}` : 'Connect wallet'} onClick={openWallet}><Wallet size={16} /><span>{activeAccount ? `${activeAccount.slice(0, 6)}…${activeAccount.slice(-4)}` : 'Connect wallet'}</span></button><button className="theme-toggle" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>
+    <main className="live-main"><div className="page-heading"><div><h1>{view === 'swap' ? 'Swap' : view === 'bridge' ? 'Bridge' : 'Pools'}</h1><p>{view === 'swap' ? 'Compare live routes and exchange assets.' : view === 'bridge' ? 'Move assets between supported networks with live quotes.' : 'Explore live liquidity across supported networks.'}</p></div>{view === 'swap' && <button className="chart-toggle" aria-expanded={chartVisible} onClick={() => setChartVisible(value => !value)}>{chartVisible ? 'Hide chart' : 'Show chart'}</button>}</div>{view === 'pools' ? <Pools /> : <div className={`swap-market-layout${view === 'swap' && chartVisible ? ' with-chart' : ''}`}><div className="widget-column"><div className="widget-wrap" ref={widgetRef}>{hydrated ? <LiFiWidget key={`${view}-${theme}`} integrator="ArreyX" config={config} /> : <div className="widget-loading" role="status">Loading live exchange…</div>}</div><WalletBalances key={chartTokens.fromChain} accounts={accounts} selection={chartTokens} /></div>{view === 'swap' && chartVisible && <div className="market-sidebar"><LiveChart selection={chartTokens} /></div>}</div>}</main>
     <footer><span>© {new Date().getFullYear()} ArreyX</span><span>Quotes, balances and transactions are provided by LI.FI and connected wallets.</span></footer></div>;
 }

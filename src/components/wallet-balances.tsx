@@ -35,7 +35,7 @@ async function solanaRpc<T>(method: string, params: unknown[]): Promise<T> {
 }
 
 export function WalletBalances({ accounts, selection }: { accounts: { evm: string | null; solana: string | null }; selection: Selection }) {
-  const [networkId, setNetworkId] = useState(selection.fromChain);
+  const networkId = selection.fromChain;
   const [refresh, setRefresh] = useState(0);
   const [balance, setBalance] = useState<BalanceState>({ status: 'loading', rows: [] });
   const chain = chains[networkId];
@@ -85,10 +85,9 @@ export function WalletBalances({ accounts, selection }: { accounts: { evm: strin
     return () => { cancelled = true; window.clearInterval(interval); };
   }, [account, chain, networkId, tokens, refresh]);
 
-  return <section className="balances-panel" aria-label="Connected wallet balances">
-    <div className="balances-heading"><div><span className="balances-kicker"><Wallet size={14} /> YOUR WALLET</span><h2>Balances</h2><p>{account ? `${account.slice(0, 6)}…${account.slice(-4)}` : 'Connect your wallet in the swap or bridge form.'}</p></div><button aria-label="Refresh balances" title="Refresh balances" disabled={!account} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={17} /></button></div>
-    <label className="balances-network">Network<select value={networkId} onChange={event => setNetworkId(Number(event.target.value))}>{Object.entries(chains).map(([id, item]) => <option key={id} value={id}>{item.name}</option>)}<option value={solanaId}>Solana</option></select></label>
-    {!account ? <p className="balances-empty">Connect {networkId === solanaId ? 'a Solana' : 'an EVM'} wallet in the exchange form to view real balances.</p> : balance.status === 'loading' ? <p className="balances-empty" role="status">Reading balances from {chain?.name ?? 'Solana'}…</p> : <div className="balances-list">{balance.rows.map(row => <div className="balances-row" key={row.key}><span>{row.symbol}</span><strong className={row.status === 'error' ? 'balance-error' : ''}>{row.amount}</strong></div>)}</div>}
-    <p className="balances-note">Native coin and selected tokens on this network. {networkId === solanaId ? 'Solana token mints are abbreviated.' : ''} {account && balance.updatedAt ? `Updated ${new Date(balance.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` : ''} Balances may change after transactions.</p>
+  return <section className="balances-strip" aria-label="Connected wallet balances">
+    <span className="balances-strip-label"><Wallet size={14} /> {chain?.name ?? 'Solana'} balance</span>
+    {!account ? <span className="balances-strip-empty">—</span> : balance.status === 'loading' ? <span className="balances-strip-empty" role="status">Loading…</span> : <div className="balances-strip-list">{balance.rows.map(row => <span key={row.key} title={row.key}><strong className={row.status === 'error' ? 'balance-error' : ''}>{row.amount}</strong> {row.symbol}</span>)}</div>}
+    <button aria-label="Refresh balances" title="Refresh balances" disabled={!account} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15} /></button>
   </section>;
 }
