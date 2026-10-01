@@ -264,6 +264,8 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .tool-alert{padding:12px 14px;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:16px}
 .tool-alert.error{border-color:#7d3b48;color:#ffabb7;background:#401e251f}.tool-alert.success{border-color:#377254;color:#8de3b3;background:#1d3d2c33}
 @media(max-width:740px){.tool-grid{grid-template-columns:1fr}.tool-panel{padding:18px}.tool-footer-links{gap:12px;flex-wrap:wrap}}
+.order-mode{display:flex;gap:8px;margin-bottom:14px}.order-mode button{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:9px;color:var(--muted);background:var(--surface);font-size:12px;font-weight:650}.order-mode button.active{color:var(--text);border-color:#6f7cf7;background:var(--raised)}
+.cow-widget-panel{min-height:760px;background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
 .chart-toggle:hover{background:var(--raised)}
 .swap-market-layout>.widget-wrap{min-width:0}
 .market-chart{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;min-width:0}
