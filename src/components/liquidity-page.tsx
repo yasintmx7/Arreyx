@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { Droplets, ExternalLink, PlusCircle } from 'lucide-react';
-import { NONFUNGIBLE_POSITION_MANAGER_ADDRESSES, Percent, Token, V3_CORE_FACTORY_ADDRESSES } from '@uniswap/sdk-core';
+import { CurrencyAmount, NONFUNGIBLE_POSITION_MANAGER_ADDRESSES, Percent, Token, V3_CORE_FACTORY_ADDRESSES } from '@uniswap/sdk-core';
 import { FeeAmount, nearestUsableTick, NonfungiblePositionManager, Pool, Position, TickMath, TICK_SPACINGS, encodeSqrtRatioX96 } from '@uniswap/v3-sdk';
 import { base, mainnet } from 'viem/chains';
-import { createPublicClient, encodeFunctionData, erc20Abi, getAddress, http, isAddress, parseUnits, zeroAddress } from 'viem';
+import { createPublicClient, encodeFunctionData, erc20Abi, formatUnits, getAddress, http, isAddress, parseUnits, zeroAddress } from 'viem';
 import { ToolShell } from './tool-shell';
 import { useEvmWallet } from '@/hooks/use-evm-wallet';
 import { rpcUrlFor } from '@/lib/network-config';
@@ -21,10 +21,17 @@ const poolAbi = [
   { type: 'function', name: 'slot0', stateMutability: 'view', inputs: [], outputs: [{ name: 'sqrtPriceX96', type: 'uint160' }, { name: 'tick', type: 'int24' }, { name: 'observationIndex', type: 'uint16' }, { name: 'observationCardinality', type: 'uint16' }, { name: 'observationCardinalityNext', type: 'uint16' }, { name: 'feeProtocol', type: 'uint8' }, { name: 'unlocked', type: 'bool' }] },
   { type: 'function', name: 'liquidity', stateMutability: 'view', inputs: [], outputs: [{ name: 'liquidity', type: 'uint128' }] },
 ] as const;
+const positionManagerAbi = [
+  { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ name: 'balance', type: 'uint256' }] },
+  { type: 'function', name: 'tokenOfOwnerByIndex', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }, { name: 'index', type: 'uint256' }], outputs: [{ name: 'tokenId', type: 'uint256' }] },
+  { type: 'function', name: 'positions', stateMutability: 'view', inputs: [{ name: 'tokenId', type: 'uint256' }], outputs: [{ name: 'nonce', type: 'uint96' }, { name: 'operator', type: 'address' }, { name: 'token0', type: 'address' }, { name: 'token1', type: 'address' }, { name: 'fee', type: 'uint24' }, { name: 'tickLower', type: 'int24' }, { name: 'tickUpper', type: 'int24' }, { name: 'liquidity', type: 'uint128' }, { name: 'feeGrowthInside0LastX128', type: 'uint256' }, { name: 'feeGrowthInside1LastX128', type: 'uint256' }, { name: 'tokensOwed0', type: 'uint128' }, { name: 'tokensOwed1', type: 'uint128' }] },
+] as const;
 
 type TokenMeta = { address: `0x${string}`; symbol: string; decimals: number };
 type TxState = { kind: 'idle' | 'working' | 'success' | 'error'; message?: string; hash?: string };
 type SupportedFee = FeeAmount.LOWEST | FeeAmount.LOW | FeeAmount.MEDIUM | FeeAmount.HIGH;
+type PositionRecord = { tokenId: bigint; token0: TokenMeta; token1: TokenMeta; fee: SupportedFee; tickLower: number; tickUpper: number; liquidity: bigint; owed0: bigint; owed1: bigint };
+function currentTime() { return Date.now(); }
 
 export function LiquidityPage() {
   const wallet = useEvmWallet();
@@ -37,11 +44,62 @@ export function LiquidityPage() {
   const [fee, setFee] = useState<SupportedFee>(FeeAmount.MEDIUM);
   const [slippage, setSlippage] = useState('0.5');
   const [tx, setTx] = useState<TxState>({ kind: 'idle' });
+  const [positions, setPositions] = useState<PositionRecord[]>([]);
+  const [positionsState, setPositionsState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [positionsError, setPositionsError] = useState<string | null>(null);
   const deployment = deployments[networkId];
   const disabled = tx.kind === 'working';
 
   const feeLabel = useMemo(() => ({ [FeeAmount.LOWEST]: '0.01%', [FeeAmount.LOW]: '0.05%', [FeeAmount.MEDIUM]: '0.30%', [FeeAmount.HIGH]: '1.00%' }[fee]), [fee]);
-  function changeNetwork(next: 1 | 8453) { const defaults = deployments[next].defaults; setNetworkId(next); setTokenA(defaults[0]); setTokenB(defaults[1]); setTx({ kind: 'idle' }); }
+  function changeNetwork(next: 1 | 8453) { const defaults = deployments[next].defaults; setNetworkId(next); setTokenA(defaults[0]); setTokenB(defaults[1]); setTx({ kind: 'idle' }); setPositions([]); setPositionsState('idle'); }
+
+  async function loadPositions() {
+    try {
+      if (!wallet.account) { await wallet.connect(); throw new Error('Connect your wallet, then load positions again.'); }
+      setPositionsState('loading'); setPositionsError(null);
+      const client = createPublicClient({ chain: deployment.chain, transport: http(rpcUrlFor(networkId)) });
+      const owner = getAddress(wallet.account);
+      const manager = getAddress(NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[networkId]);
+      const balance = await client.readContract({ address: manager, abi: positionManagerAbi, functionName: 'balanceOf', args: [owner] });
+      if (balance > 50n) throw new Error('This wallet has more than 50 positions. Use a dedicated position manager for bulk operations.');
+      const tokenIds = await Promise.all(Array.from({ length: Number(balance) }, (_, index) => client.readContract({ address: manager, abi: positionManagerAbi, functionName: 'tokenOfOwnerByIndex', args: [owner, BigInt(index)] })));
+      const rawPositions = await Promise.all(tokenIds.map(tokenId => client.readContract({ address: manager, abi: positionManagerAbi, functionName: 'positions', args: [tokenId] }).then(position => ({ tokenId, position }))));
+      const tokenAddresses = Array.from(new Set(rawPositions.flatMap(item => [item.position[2], item.position[3]])));
+      const metas = new Map<string, TokenMeta>();
+      await Promise.all(tokenAddresses.map(async address => {
+        const [symbol, decimals] = await Promise.all([client.readContract({ address, abi: erc20Abi, functionName: 'symbol' }), client.readContract({ address, abi: erc20Abi, functionName: 'decimals' })]);
+        metas.set(address.toLowerCase(), { address, symbol, decimals });
+      }));
+      setPositions(rawPositions.map(({ tokenId, position }) => ({ tokenId, token0: metas.get(position[2].toLowerCase())!, token1: metas.get(position[3].toLowerCase())!, fee: position[4] as SupportedFee, tickLower: position[5], tickUpper: position[6], liquidity: position[7], owed0: position[10], owed1: position[11] })).filter(item => item.token0 && item.token1));
+      setPositionsState('ready');
+    } catch (reason) { setPositionsError(reason instanceof Error ? reason.message : 'Positions could not be loaded.'); setPositionsState('error'); }
+  }
+
+  async function removePosition(item: PositionRecord, percentage: 25 | 50 | 100) {
+    try {
+      if (!wallet.account || !wallet.provider) throw new Error('Connect the position owner wallet first.');
+      if (!window.confirm(`Remove ${percentage}% of position #${item.tokenId.toString()} and collect available tokens?`)) return;
+      if (wallet.chainId !== networkId) await wallet.switchChain(networkId);
+      setTx({ kind: 'working', message: `Preparing ${percentage}% liquidity removal…` });
+      const client = createPublicClient({ chain: deployment.chain, transport: http(rpcUrlFor(networkId)) });
+      const sdk0 = new Token(networkId, item.token0.address, item.token0.decimals, item.token0.symbol);
+      const sdk1 = new Token(networkId, item.token1.address, item.token1.decimals, item.token1.symbol);
+      const factory = getAddress(V3_CORE_FACTORY_ADDRESSES[networkId]);
+      const manager = getAddress(NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[networkId]);
+      const poolAddress = await client.readContract({ address: factory, abi: factoryAbi, functionName: 'getPool', args: [item.token0.address, item.token1.address, item.fee] });
+      if (poolAddress === zeroAddress) throw new Error('The position pool could not be found.');
+      const [slot0, liquidity] = await Promise.all([client.readContract({ address: poolAddress, abi: poolAbi, functionName: 'slot0' }), client.readContract({ address: poolAddress, abi: poolAbi, functionName: 'liquidity' })]);
+      const pool = new Pool(sdk0, sdk1, item.fee, slot0[0].toString(), liquidity.toString(), slot0[1]);
+      const position = new Position({ pool, liquidity: item.liquidity.toString(), tickLower: item.tickLower, tickUpper: item.tickUpper });
+      const now = currentTime();
+      const method = NonfungiblePositionManager.removeCallParameters(position, { tokenId: item.tokenId.toString(), liquidityPercentage: new Percent(percentage, 100), slippageTolerance: new Percent(50, 10_000), deadline: Math.floor(now / 1000) + 1200, burnToken: percentage === 100, collectOptions: { recipient: getAddress(wallet.account), expectedCurrencyOwed0: CurrencyAmount.fromRawAmount(sdk0, item.owed0.toString()), expectedCurrencyOwed1: CurrencyAmount.fromRawAmount(sdk1, item.owed1.toString()) } });
+      const hash = await wallet.provider.request<`0x${string}`>({ method: 'eth_sendTransaction', params: [{ from: wallet.account, to: manager, data: method.calldata, value: `0x${BigInt(method.value).toString(16)}` }] });
+      saveTransaction({ hash, title: `Remove ${percentage}% Uniswap V3 liquidity`, network: deployment.name, explorer: deployment.explorer, createdAt: now, status: 'pending' });
+      await client.waitForTransactionReceipt({ hash }); confirmTransaction(hash);
+      setTx({ kind: 'success', hash, message: `${percentage}% liquidity removed and available tokens collected.` });
+      await loadPositions();
+    } catch (reason) { setTx({ kind: 'error', message: reason instanceof Error ? reason.message : 'Liquidity removal failed.' }); }
+  }
 
   async function submit() {
     try {
@@ -135,5 +193,6 @@ export function LiquidityPage() {
     </section>
     <aside className="tool-panel liquidity-summary"><h2 className="tool-section-title">Transaction details</h2><dl><div><dt>Protocol</dt><dd>Uniswap V3</dd></div><div><dt>Network</dt><dd>{deployment.name}</dd></div><div><dt>Position range</dt><dd>Full range</dd></div><div><dt>Fee tier</dt><dd>{feeLabel}</dd></div><div><dt>Approval policy</dt><dd>Exact amounts</dd></div><div><dt>Position type</dt><dd>Transferable NFT</dd></div></dl><p>Full-range positions stay active across all prices but may earn less than concentrated positions. Token contracts, balances, pool state, approvals, and transactions are read directly from the selected network.</p></aside>
     </div>
+    <section className="tool-panel positions-panel"><div className="positions-heading"><div><h2 className="tool-section-title">Your positions</h2><p className="tool-section-copy">Read Uniswap V3 position NFTs owned by the connected wallet on {deployment.name}.</p></div><button className="tool-secondary-button" disabled={disabled || positionsState === 'loading'} onClick={loadPositions}>{positionsState === 'loading' ? 'Loading…' : 'Load positions'}</button></div>{positionsError && <div className="tool-alert error">{positionsError}</div>}{positionsState === 'ready' && positions.length === 0 && <p className="positions-empty">No Uniswap V3 positions found for this wallet on {deployment.name}.</p>}{positions.length > 0 && <div className="positions-list">{positions.map(item => <article key={item.tokenId.toString()}><div><span>Position #{item.tokenId.toString()}</span><strong>{item.token0.symbol} / {item.token1.symbol}</strong><small>{Number(item.fee) / 10_000}% fee · liquidity {item.liquidity.toString()}</small><small>Owed: {formatUnits(item.owed0, item.token0.decimals)} {item.token0.symbol} · {formatUnits(item.owed1, item.token1.decimals)} {item.token1.symbol}</small></div><div><button disabled={disabled} onClick={() => removePosition(item, 25)}>Remove 25%</button><button disabled={disabled} onClick={() => removePosition(item, 50)}>Remove 50%</button><button className="danger" disabled={disabled} onClick={() => removePosition(item, 100)}>Remove all</button></div></article>)}</div>}</section>
   </ToolShell>;
 }
