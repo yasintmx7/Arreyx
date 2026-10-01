@@ -7,6 +7,7 @@ import { arbitrum, base, bsc, mainnet, polygon } from 'viem/chains';
 import { createPublicClient, encodeFunctionData, erc20Abi, formatUnits, getAddress, http, isAddress } from 'viem';
 import { ToolShell } from './tool-shell';
 import { useEvmWallet } from '@/hooks/use-evm-wallet';
+import { rpcUrlFor } from '@/lib/network-config';
 
 const safetyNetworks = {
   1: { name: 'Ethereum', chain: mainnet, explorer: 'https://etherscan.io' },
@@ -61,7 +62,7 @@ export function SafetyPage() {
       if (!wallet.account) { await wallet.connect(); throw new Error('Connect your wallet, then inspect the allowance again.'); }
       if (!isAddress(token) || !isAddress(spender)) throw new Error('Enter valid token and spender contract addresses.');
       setBusy('allowance'); setError(null); setAllowance(null);
-      const client = createPublicClient({ chain: network.chain, transport: http() });
+      const client = createPublicClient({ chain: network.chain, transport: http(rpcUrlFor(networkId)) });
       const tokenAddress = getAddress(token);
       const [symbol, decimals, raw] = await Promise.all([
         client.readContract({ address: tokenAddress, abi: erc20Abi, functionName: 'symbol' }),
@@ -78,7 +79,7 @@ export function SafetyPage() {
       if (!wallet.account || !wallet.provider || !allowance) throw new Error('Inspect a connected-wallet allowance first.');
       if (wallet.chainId !== networkId) await wallet.switchChain(networkId);
       setBusy('revoke'); setError(null);
-      const client = createPublicClient({ chain: network.chain, transport: http() });
+      const client = createPublicClient({ chain: network.chain, transport: http(rpcUrlFor(networkId)) });
       const hash = await wallet.provider.request<`0x${string}`>({ method: 'eth_sendTransaction', params: [{ from: wallet.account, to: getAddress(token), data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [getAddress(spender), 0n] }), value: '0x0' }] });
       await client.waitForTransactionReceipt({ hash });
       setAllowance({ ...allowance, raw: 0n, formatted: '0' });

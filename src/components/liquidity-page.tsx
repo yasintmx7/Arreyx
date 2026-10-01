@@ -8,6 +8,7 @@ import { base, mainnet } from 'viem/chains';
 import { createPublicClient, encodeFunctionData, erc20Abi, getAddress, http, isAddress, parseUnits, zeroAddress } from 'viem';
 import { ToolShell } from './tool-shell';
 import { useEvmWallet } from '@/hooks/use-evm-wallet';
+import { rpcUrlFor } from '@/lib/network-config';
 
 const deployments = {
   1: { chain: mainnet, name: 'Ethereum', explorer: 'https://etherscan.io/tx/', defaults: ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'] },
@@ -50,7 +51,7 @@ export function LiquidityPage() {
       if (!Number.isFinite(tolerance) || tolerance <= 0 || tolerance > 5) throw new Error('Slippage must be above 0% and no more than 5%.');
       if (wallet.chainId !== networkId) await wallet.switchChain(networkId);
       setTx({ kind: 'working', message: 'Reading tokens and the live Uniswap pool…' });
-      const client = createPublicClient({ chain: deployment.chain, transport: http() });
+      const client = createPublicClient({ chain: deployment.chain, transport: http(rpcUrlFor(networkId)) });
       const readToken = async (address: string): Promise<TokenMeta> => {
         if (!isAddress(address)) throw new Error('Enter two valid ERC-20 contract addresses.');
         const checked = getAddress(address);

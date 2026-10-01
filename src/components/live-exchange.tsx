@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { WalletBalances } from './wallet-balances';
 import { AppNavigation } from './app-navigation';
+import { configuredRpcUrls, walletConnectProjectId } from '@/lib/network-config';
 
 type View = 'swap' | 'bridge' | 'pools' | 'activity';
 type Theme = 'dark' | 'light';
@@ -201,7 +202,8 @@ export function LiveExchange({ initialView }: { initialView?: View } = {}) {
     fromChain: view === 'bridge' ? 1 : widgetDefaults.fromChain, toChain: view === 'bridge' ? 42161 : widgetDefaults.toChain,
     fromToken: view === 'bridge' ? '0x0000000000000000000000000000000000000000' : widgetDefaults.fromToken,
     toToken: view === 'bridge' ? '0x0000000000000000000000000000000000000000' : widgetDefaults.toToken,
-    providers: [EthereumProvider(), SolanaProvider()],
+    providers: [EthereumProvider({ walletConnect: walletConnectProjectId ? { projectId: walletConnectProjectId } : false }), SolanaProvider()],
+    sdkConfig: { rpcUrls: configuredRpcUrls },
     theme: { container: { border: '1px solid var(--border)', borderRadius: '16px', boxShadow: 'none' }, routesContainer: { borderRadius: '16px', boxShadow: 'none' }, colorSchemes: { dark: { palette: { primary: { main: '#7584ff' }, background: { default: '#181b20', paper: '#20242a' }, text: { primary: '#f4f5f7', secondary: '#aab2bf' } } }, light: { palette: { primary: { main: '#4559dc' }, background: { default: '#ffffff', paper: '#f5f7fb' }, text: { primary: '#1b2333', secondary: '#626d80' } } } } },
   }), [theme, view, widgetDefaults]);
   function toggleTheme() { const next = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('arreyx-theme', next); setTheme(next); }

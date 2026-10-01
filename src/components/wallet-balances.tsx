@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Wallet } from 'lucide-react';
 import { createPublicClient, formatUnits, http, type Chain } from 'viem';
 import { arbitrum, avalanche, base, berachain, blast, bsc, gnosis, linea, mainnet, mantle, optimism, polygon, scroll, sonic, unichain, zksync } from 'viem/chains';
+import { rpcUrlFor, solanaRpcUrl } from '@/lib/network-config';
 
 type Selection = { fromChain: number; fromToken: string; toChain: number; toToken: string };
 type BalanceRow = { key: string; symbol: string; amount: string; status: 'ready' | 'error' };
@@ -27,7 +28,7 @@ function formatBalance(value: bigint, decimals: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(amount);
 }
 async function solanaRpc<T>(method: string, params: unknown[]): Promise<T> {
-  const response = await fetch('https://api.mainnet-beta.solana.com', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+  const response = await fetch(solanaRpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
   if (!response.ok) throw new Error(`Solana RPC returned ${response.status}`);
   const body: { result?: T; error?: { message?: string } } = await response.json();
   if (body.error || body.result == null) throw new Error(body.error?.message ?? 'Solana RPC returned no result');
@@ -64,7 +65,7 @@ export function WalletBalances({ accounts, selection }: { accounts: { evm: strin
         return;
       }
       if (!chain) return;
-      const client = createPublicClient({ chain, transport: http() });
+      const client = createPublicClient({ chain, transport: http(rpcUrlFor(networkId)) });
       const address = account as `0x${string}`;
       const results = await Promise.allSettled([
         client.getBalance({ address }).then(value => ({ key: 'native', symbol: chain.nativeCurrency.symbol, amount: formatBalance(value, chain.nativeCurrency.decimals), status: 'ready' as const })),
