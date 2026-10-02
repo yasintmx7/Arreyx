@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Droplets, ExternalLink, PlusCircle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, Droplets, ExternalLink, PlusCircle, X } from 'lucide-react';
 import { CurrencyAmount, NONFUNGIBLE_POSITION_MANAGER_ADDRESSES, Percent, Token, V3_CORE_FACTORY_ADDRESSES } from '@uniswap/sdk-core';
 import { FeeAmount, nearestUsableTick, NonfungiblePositionManager, Pool, Position, TickMath, TICK_SPACINGS, encodeSqrtRatioX96 } from '@uniswap/v3-sdk';
 import { base, mainnet } from 'viem/chains';
@@ -47,11 +47,32 @@ export function LiquidityPage() {
   const [positions, setPositions] = useState<PositionRecord[]>([]);
   const [positionsState, setPositionsState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [positionsError, setPositionsError] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+  const reviewDialog = useRef<HTMLDialogElement>(null);
   const deployment = deployments[networkId];
   const disabled = tx.kind === 'working';
 
   const feeLabel = useMemo(() => ({ [FeeAmount.LOWEST]: '0.01%', [FeeAmount.LOW]: '0.05%', [FeeAmount.MEDIUM]: '0.30%', [FeeAmount.HIGH]: '1.00%' }[fee]), [fee]);
   function changeNetwork(next: 1 | 8453) { const defaults = deployments[next].defaults; setNetworkId(next); setTokenA(defaults[0]); setTokenB(defaults[1]); setTx({ kind: 'idle' }); setPositions([]); setPositionsState('idle'); }
+  useEffect(() => {
+    const dialog = reviewDialog.current;
+    if (!dialog) return;
+    if (reviewing && !dialog.open) dialog.showModal();
+    if (!reviewing && dialog.open) dialog.close();
+  }, [reviewing]);
+
+  async function beginReview() {
+    const account = wallet.account ?? await wallet.connect();
+    if (!account) return;
+    if (!isAddress(tokenA) || !isAddress(tokenB)) { setTx({ kind: 'error', message: 'Enter two valid ERC-20 contract addresses.' }); return; }
+    if (tokenA.toLowerCase() === tokenB.toLowerCase()) { setTx({ kind: 'error', message: 'Choose two different tokens.' }); return; }
+    if (!amountA || !amountB || Number(amountA) <= 0 || Number(amountB) <= 0) { setTx({ kind: 'error', message: 'Enter valid amounts greater than zero for both tokens.' }); return; }
+    const tolerance = Number(slippage);
+    if (!Number.isFinite(tolerance) || tolerance <= 0 || tolerance > 5) { setTx({ kind: 'error', message: 'Slippage must be above 0% and no more than 5%.' }); return; }
+    if (initialPrice && (!Number.isFinite(Number(initialPrice)) || Number(initialPrice) <= 0)) { setTx({ kind: 'error', message: 'Initial price must be greater than zero.' }); return; }
+    setTx({ kind: 'idle' });
+    setReviewing(true);
+  }
 
   async function loadPositions() {
     try {
@@ -189,10 +210,12 @@ export function LiquidityPage() {
       <div className="tool-field-row"><label className="tool-field">Fee tier<select value={fee} onChange={event => setFee(Number(event.target.value) as SupportedFee)} disabled={disabled}><option value={100}>0.01%</option><option value={500}>0.05%</option><option value={3000}>0.30%</option><option value={10000}>1.00%</option></select></label><label className="tool-field">Slippage tolerance<input inputMode="decimal" value={slippage} onChange={event => setSlippage(event.target.value)} disabled={disabled} /><span className="field-suffix">%</span></label></div>
       <label className="tool-field">Initial price <span>Token B per Token A; only used when creating a new pool</span><input inputMode="decimal" placeholder="Required only for a new pool" value={initialPrice} onChange={event => setInitialPrice(event.target.value)} disabled={disabled} /></label>
       {(wallet.error || tx.message) && <div className={`tool-alert ${tx.kind === 'error' || wallet.error ? 'error' : tx.kind === 'success' ? 'success' : ''}`}>{wallet.error ?? tx.message}{tx.hash && <a className="tx-link" href={`${deployment.explorer}${tx.hash}`} target="_blank" rel="noopener noreferrer">View transaction <ExternalLink size={13} /></a>}</div>}
-      <button className="tool-primary" disabled={disabled} onClick={submit}><PlusCircle size={18} /> {disabled ? 'Waiting for wallet…' : wallet.account ? 'Review liquidity transaction' : 'Connect wallet'}</button>
+      <div className="liquidity-warning"><AlertTriangle size={16} /><span>Use wrapped native token contracts such as WETH. Direct native ETH is not accepted by this ERC-20 position form.</span></div>
+      <button className="tool-primary" disabled={disabled} onClick={beginReview}><PlusCircle size={18} /> {disabled ? 'Waiting for wallet…' : wallet.account ? 'Review position' : 'Connect wallet'}</button>
     </section>
     <aside className="tool-panel liquidity-summary"><h2 className="tool-section-title">Transaction details</h2><dl><div><dt>Protocol</dt><dd>Uniswap V3</dd></div><div><dt>Network</dt><dd>{deployment.name}</dd></div><div><dt>Position range</dt><dd>Full range</dd></div><div><dt>Fee tier</dt><dd>{feeLabel}</dd></div><div><dt>Approval policy</dt><dd>Exact amounts</dd></div><div><dt>Position type</dt><dd>Transferable NFT</dd></div></dl><p>Full-range positions stay active across all prices but may earn less than concentrated positions. Token contracts, balances, pool state, approvals, and transactions are read directly from the selected network.</p></aside>
     </div>
     <section className="tool-panel positions-panel"><div className="positions-heading"><div><h2 className="tool-section-title">Your positions</h2><p className="tool-section-copy">Read Uniswap V3 position NFTs owned by the connected wallet on {deployment.name}.</p></div><button className="tool-secondary-button" disabled={disabled || positionsState === 'loading'} onClick={loadPositions}>{positionsState === 'loading' ? 'Loading…' : 'Load positions'}</button></div>{positionsError && <div className="tool-alert error">{positionsError}</div>}{positionsState === 'ready' && positions.length === 0 && <p className="positions-empty">No Uniswap V3 positions found for this wallet on {deployment.name}.</p>}{positions.length > 0 && <div className="positions-list">{positions.map(item => <article key={item.tokenId.toString()}><div><span>Position #{item.tokenId.toString()}</span><strong>{item.token0.symbol} / {item.token1.symbol}</strong><small>{Number(item.fee) / 10_000}% fee · liquidity {item.liquidity.toString()}</small><small>Owed: {formatUnits(item.owed0, item.token0.decimals)} {item.token0.symbol} · {formatUnits(item.owed1, item.token1.decimals)} {item.token1.symbol}</small></div><div><button disabled={disabled} onClick={() => removePosition(item, 25)}>Remove 25%</button><button disabled={disabled} onClick={() => removePosition(item, 50)}>Remove 50%</button><button className="danger" disabled={disabled} onClick={() => removePosition(item, 100)}>Remove all</button></div></article>)}</div>}</section>
+    <dialog ref={reviewDialog} className="review-dialog" onClose={() => setReviewing(false)} aria-labelledby="liquidity-review-title"><div className="review-dialog-head"><div><span>TRANSACTION REVIEW</span><h2 id="liquidity-review-title">Confirm position details</h2></div><button aria-label="Close review" onClick={() => setReviewing(false)}><X size={18} /></button></div><div className="review-assets"><div><span>Token A</span><strong>{amountA}</strong><small>{tokenA}</small></div><div><span>Token B</span><strong>{amountB}</strong><small>{tokenB}</small></div></div><dl className="review-list"><div><dt>Network</dt><dd>{deployment.name}</dd></div><div><dt>Protocol</dt><dd>Uniswap V3</dd></div><div><dt>Fee tier</dt><dd>{feeLabel}</dd></div><div><dt>Range</dt><dd>Full range</dd></div><div><dt>Maximum slippage</dt><dd>{slippage}%</dd></div><div><dt>Approvals</dt><dd>Exact token amounts</dd></div></dl><div className="liquidity-warning"><AlertTriangle size={16} /><span>If this pool does not exist, the entered initial price can initialize it. Verify both contract addresses and amounts before continuing.</span></div><div className="review-dialog-actions"><button className="tool-secondary-button" onClick={() => setReviewing(false)}>Go back</button><button className="tool-primary" onClick={() => { setReviewing(false); submit(); }}>Continue to wallet</button></div></dialog>
   </ToolShell>;
 }

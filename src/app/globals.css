@@ -438,3 +438,12 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .risk-summary.medium{color:var(--warning);background:color-mix(in srgb,var(--warning) 7%,transparent)}
 .risk-summary.high{color:var(--danger);background:color-mix(in srgb,var(--danger) 7%,transparent)}
 @media(max-width:520px){.trade-actions{justify-content:space-between}.trade-actions a{font-size:10px}}
+.liquidity-warning{display:flex;align-items:flex-start;gap:9px;color:var(--warning);font-size:11px;line-height:1.55;margin:14px 0}.liquidity-warning svg{margin-top:1px;flex:none}
+.review-dialog{width:min(520px,calc(100% - 28px));border:1px solid var(--border);border-radius:18px;background:var(--surface);color:var(--text);padding:0;box-shadow:0 30px 90px #0009}
+.review-dialog::backdrop{background:#07090cbd;backdrop-filter:blur(5px)}
+.review-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:22px 22px 18px;border-bottom:1px solid var(--border)}
+.review-dialog-head span{font-size:9px;letter-spacing:.15em;color:#9eabec;font-weight:700}.review-dialog-head h2{font-size:21px;margin-top:7px}.review-dialog-head button{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--border);border-radius:8px;color:var(--muted)}
+.review-assets{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:18px 22px 0}.review-assets>div{min-width:0;background:var(--raised);border:1px solid var(--border);border-radius:11px;padding:13px}.review-assets span,.review-assets small,.review-assets strong{display:block}.review-assets span{color:var(--muted);font-size:10px}.review-assets strong{font-size:21px;margin:8px 0}.review-assets small{color:var(--muted);font-size:9px;overflow:hidden;text-overflow:ellipsis}
+.review-list{margin:18px 22px}.review-list>div{display:flex;justify-content:space-between;gap:20px;padding:8px 0;font-size:12px}.review-list dt{color:var(--muted)}.review-list dd{margin:0;text-align:right;font-weight:600}.review-dialog>.liquidity-warning{margin:0 22px 18px;padding:12px;border:1px solid color-mix(in srgb,var(--warning) 25%,var(--border));border-radius:10px;background:color-mix(in srgb,var(--warning) 6%,transparent)}
+.review-dialog-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;padding:18px 22px;border-top:1px solid var(--border)}.review-dialog-actions .tool-primary{width:100%}
+@media(max-width:520px){.review-assets{grid-template-columns:1fr}.review-dialog-actions{grid-template-columns:1fr}.review-dialog{max-height:90dvh;overflow:auto}}
