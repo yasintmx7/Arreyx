@@ -1,4 +1,7 @@
 import { InformationPage } from '@/components/information-page';
+import { pageMetadata } from '@/lib/page-metadata';
+
+export const metadata = pageMetadata('Terms of use', 'Terms for using the ArreyX self-custodial interface and its third-party integrations.', '/terms');
 
 export default function TermsPage() { return <InformationPage title="Terms of use" intro="These terms describe the conditions for using the ArreyX self-custodial interface." updated="October 2, 2026" sections={[
   { title: 'The interface', paragraphs: ['ArreyX is a non-custodial interface. It helps users request quotes, prepare transactions, inspect public blockchain data, and interact with third-party protocols. ArreyX does not hold private keys, custody assets, guarantee execution, or reverse blockchain transactions.'] },

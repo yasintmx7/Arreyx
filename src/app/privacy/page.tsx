@@ -1,4 +1,7 @@
 import { InformationPage } from '@/components/information-page';
+import { pageMetadata } from '@/lib/page-metadata';
+
+export const metadata = pageMetadata('Privacy notice', 'How ArreyX handles public wallet data, browser storage, and third-party providers.', '/privacy');
 
 export default function PrivacyPage() { return <InformationPage title="Privacy notice" intro="ArreyX is designed around public wallet data and minimal browser storage." updated="October 2, 2026" sections={[
   { title: 'Data used by the interface', paragraphs: ['When you connect a wallet or enter an address, that public address and the selected network may be sent directly from your browser to wallet providers, RPC endpoints, LI.FI, CoW Protocol, Blockscout, GoPlus, GeckoTerminal, and other services required for the feature you use. Blockchain transactions and signatures are public or observable by the relevant network.'] },

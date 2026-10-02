@@ -1,4 +1,7 @@
 import { InformationPage } from '@/components/information-page';
+import { pageMetadata } from '@/lib/page-metadata';
+
+export const metadata = pageMetadata('Risk disclosure', 'Review trading, bridge, token, approval, order, liquidity, and operational risks.', '/risk');
 
 export default function RiskPage() { return <InformationPage title="Risk disclosure" intro="On-chain trading, bridging, orders, and liquidity positions can result in a total loss." updated="October 2, 2026" sections={[
   { title: 'Trading and routing', paragraphs: ['Prices and routes change continuously. Slippage, price impact, gas costs, MEV, token taxes, transfer restrictions, and insufficient liquidity can change the final result or cause a transaction to fail. A quote is not a guarantee.'] },
