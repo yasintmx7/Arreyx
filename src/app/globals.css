@@ -430,3 +430,11 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .product-context a:hover{color:var(--text)}
 [data-theme="light"] .product-context a{color:#4057bd}
 @media(max-width:740px){.product-context{margin:-12px 0 21px;overflow-x:auto;scrollbar-width:none}.product-context::-webkit-scrollbar{display:none}.product-context a{margin-left:0}.header{background:color-mix(in srgb,var(--bg) 94%,transparent)}}
+.trade-actions{display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:3px 4px 0;color:var(--muted);font-size:11px}
+.trade-actions a{display:inline-flex;align-items:center;gap:6px}.trade-actions a:hover{color:var(--text)}
+.risk-summary{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--border);border-radius:10px;padding:12px;margin:14px 0}
+.risk-summary>div{display:flex;flex-direction:column;gap:4px}.risk-summary strong{font-size:12px}.risk-summary span{color:var(--muted);font-size:10px;line-height:1.5}
+.risk-summary.low{color:var(--positive);background:color-mix(in srgb,var(--positive) 7%,transparent)}
+.risk-summary.medium{color:var(--warning);background:color-mix(in srgb,var(--warning) 7%,transparent)}
+.risk-summary.high{color:var(--danger);background:color-mix(in srgb,var(--danger) 7%,transparent)}
+@media(max-width:520px){.trade-actions{justify-content:space-between}.trade-actions a{font-size:10px}}

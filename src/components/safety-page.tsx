@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, Ban, ExternalLink, Search, ShieldCheck } from 'lucide-react';
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESSES } from '@uniswap/sdk-core';
 import { arbitrum, base, bsc, mainnet, polygon } from 'viem/chains';
@@ -28,6 +28,20 @@ function flag(value: string | null | undefined, inverse = false) {
   return (inverse ? !active : active) ? 'Yes' : 'No';
 }
 
+function riskSummary(result: SecurityResult) {
+  const critical = ['is_honeypot', 'cannot_sell_all', 'hidden_owner', 'owner_change_balance'];
+  const warnings = ['transfer_pausable', 'is_blacklisted', 'selfdestruct', 'external_call'];
+  const criticalCount = critical.filter(key => result[key] === '1').length;
+  const warningCount = warnings.filter(key => result[key] === '1').length;
+  const buyTax = Number(result.buy_tax ?? 0);
+  const sellTax = Number(result.sell_tax ?? 0);
+  const highTax = Math.max(buyTax, sellTax) >= 0.05;
+  const count = criticalCount + warningCount + (highTax ? 1 : 0);
+  if (criticalCount) return { tone: 'high', label: `${count} elevated signal${count === 1 ? '' : 's'}` };
+  if (count || result.is_open_source === '0') return { tone: 'medium', label: `${Math.max(count, 1)} caution signal${Math.max(count, 1) === 1 ? '' : 's'}` };
+  return { tone: 'low', label: 'No flagged signals in this scan' };
+}
+
 export function SafetyPage() {
   const wallet = useEvmWallet();
   const [networkId, setNetworkId] = useState<NetworkId>(1);
@@ -38,6 +52,20 @@ export function SafetyPage() {
   const [busy, setBusy] = useState<'scan' | 'allowance' | 'revoke' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const network = safetyNetworks[networkId];
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const params = new URLSearchParams(window.location.search);
+      const requestedNetwork = Number(params.get('network')) as NetworkId;
+      const requestedToken = params.get('token');
+      if (requestedNetwork in safetyNetworks) {
+        setNetworkId(requestedNetwork);
+        setSpender(NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[requestedNetwork] ?? '');
+      }
+      if (requestedToken && isAddress(requestedToken)) setToken(getAddress(requestedToken));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   function changeNetwork(next: NetworkId) {
     setNetworkId(next); setSecurity(null); setAllowance(null); setError(null);
@@ -60,7 +88,8 @@ export function SafetyPage() {
 
   async function inspectAllowance() {
     try {
-      if (!wallet.account) { await wallet.connect(); throw new Error('Connect your wallet, then inspect the allowance again.'); }
+      const account = wallet.account ?? await wallet.connect();
+      if (!account) throw new Error(wallet.error ?? 'Connect an EVM wallet to inspect this allowance.');
       if (!isAddress(token) || !isAddress(spender)) throw new Error('Enter valid token and spender contract addresses.');
       setBusy('allowance'); setError(null); setAllowance(null);
       const client = createPublicClient({ chain: network.chain, transport: http(rpcUrlFor(networkId)) });
@@ -68,7 +97,7 @@ export function SafetyPage() {
       const [symbol, decimals, raw] = await Promise.all([
         client.readContract({ address: tokenAddress, abi: erc20Abi, functionName: 'symbol' }),
         client.readContract({ address: tokenAddress, abi: erc20Abi, functionName: 'decimals' }),
-        client.readContract({ address: tokenAddress, abi: erc20Abi, functionName: 'allowance', args: [getAddress(wallet.account), getAddress(spender)] }),
+        client.readContract({ address: tokenAddress, abi: erc20Abi, functionName: 'allowance', args: [getAddress(account), getAddress(spender)] }),
       ]);
       setAllowance({ symbol, decimals, raw, formatted: formatUnits(raw, decimals) });
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Allowance lookup failed.'); }
@@ -78,6 +107,7 @@ export function SafetyPage() {
   async function revoke() {
     try {
       if (!wallet.account || !wallet.provider || !allowance) throw new Error('Inspect a connected-wallet allowance first.');
+      if (!window.confirm(`Revoke the full ${allowance.symbol} allowance for ${spender}? Your wallet will request an on-chain transaction.`)) return;
       if (wallet.chainId !== networkId) await wallet.switchChain(networkId);
       setBusy('revoke'); setError(null);
       const client = createPublicClient({ chain: network.chain, transport: http(rpcUrlFor(networkId)) });
@@ -96,7 +126,7 @@ export function SafetyPage() {
       <label className="tool-field">Network<select value={networkId} onChange={event => changeNetwork(Number(event.target.value) as NetworkId)}>{Object.entries(safetyNetworks).map(([id, item]) => <option key={id} value={id}>{item.name}</option>)}</select></label>
       <label className="tool-field">Token contract<input value={token} onChange={event => { setToken(event.target.value); setSecurity(null); setAllowance(null); }} spellCheck={false} /></label>
       <button className="tool-primary" disabled={busy !== null} onClick={scanToken}><Search size={17} /> {busy === 'scan' ? 'Scanning…' : 'Scan token'}</button>
-      {security && <div className="security-results"><div className="security-token"><div><strong>{security.token_symbol || 'Token'}</strong><span>{security.token_name || getAddress(token)}</span></div><a href={`${network.explorer}/token/${getAddress(token)}`} target="_blank" rel="noopener noreferrer">Explorer <ExternalLink size={13} /></a></div><dl><div><dt>Honeypot</dt><dd>{flag(security.is_honeypot)}</dd></div><div><dt>Open source</dt><dd>{flag(security.is_open_source)}</dd></div><div><dt>Proxy contract</dt><dd>{flag(security.is_proxy)}</dd></div><div><dt>Owner can change balances</dt><dd>{flag(security.owner_change_balance)}</dd></div><div><dt>Hidden owner</dt><dd>{flag(security.hidden_owner)}</dd></div><div><dt>Cannot sell all</dt><dd>{flag(security.cannot_sell_all)}</dd></div><div><dt>Buy tax</dt><dd>{security.buy_tax == null ? 'Unknown' : `${Number(security.buy_tax) * 100}%`}</dd></div><div><dt>Sell tax</dt><dd>{security.sell_tax == null ? 'Unknown' : `${Number(security.sell_tax) * 100}%`}</dd></div><div><dt>Holder count</dt><dd>{security.holder_count ? Number(security.holder_count).toLocaleString() : 'Unknown'}</dd></div><div><dt>Transfer pausable</dt><dd>{flag(security.transfer_pausable)}</dd></div></dl></div>}
+      {security && <div className="security-results"><div className="security-token"><div><strong>{security.token_symbol || 'Token'}</strong><span>{security.token_name || getAddress(token)}</span></div><a href={`${network.explorer}/token/${getAddress(token)}`} target="_blank" rel="noopener noreferrer">Explorer <ExternalLink size={13} /></a></div><div className={`risk-summary ${riskSummary(security).tone}`}><ShieldCheck size={16} /><div><strong>{riskSummary(security).label}</strong><span>Review every field below. A scan cannot guarantee a token is safe.</span></div></div><dl><div><dt>Honeypot</dt><dd>{flag(security.is_honeypot)}</dd></div><div><dt>Open source</dt><dd>{flag(security.is_open_source)}</dd></div><div><dt>Proxy contract</dt><dd>{flag(security.is_proxy)}</dd></div><div><dt>Owner can change balances</dt><dd>{flag(security.owner_change_balance)}</dd></div><div><dt>Hidden owner</dt><dd>{flag(security.hidden_owner)}</dd></div><div><dt>Cannot sell all</dt><dd>{flag(security.cannot_sell_all)}</dd></div><div><dt>Buy tax</dt><dd>{security.buy_tax == null ? 'Unknown' : `${Number(security.buy_tax) * 100}%`}</dd></div><div><dt>Sell tax</dt><dd>{security.sell_tax == null ? 'Unknown' : `${Number(security.sell_tax) * 100}%`}</dd></div><div><dt>Holder count</dt><dd>{security.holder_count ? Number(security.holder_count).toLocaleString() : 'Unknown'}</dd></div><div><dt>Transfer pausable</dt><dd>{flag(security.transfer_pausable)}</dd></div></dl></div>}
     </section>
     <section className="tool-panel"><h2 className="tool-section-title"><Ban size={19} /> Approval manager</h2><p className="tool-section-copy">Inspect one exact token/spender pair directly on-chain, then set its allowance to zero from your wallet.</p>
       <label className="tool-field">Spender contract<input value={spender} onChange={event => { setSpender(event.target.value); setAllowance(null); }} placeholder="Protocol spender address" spellCheck={false} /></label>
