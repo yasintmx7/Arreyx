@@ -429,7 +429,8 @@ footer { padding: 20px 40px; border-color: #282c33; font-size: 11px; }
 .product-context a{margin-left:auto;color:#aeb8ff;font-weight:600;white-space:nowrap}
 .product-context a:hover{color:var(--text)}
 [data-theme="light"] .product-context a{color:#4057bd}
-@media(max-width:740px){.product-context{margin:-12px 0 21px;overflow-x:auto;scrollbar-width:none}.product-context::-webkit-scrollbar{display:none}.product-context a{margin-left:0}.header{background:color-mix(in srgb,var(--bg) 94%,transparent)}}
+@media(max-width:740px){.product-context{margin:-12px 0 21px;flex-wrap:wrap;gap:8px 14px;padding:10px 12px}.product-context span:nth-child(3){flex:1}.product-context a{margin-left:auto}.header{background:color-mix(in srgb,var(--bg) 94%,transparent)}.live-shell footer{align-items:flex-start;flex-direction:column}.live-shell footer .tool-footer-links{display:flex!important}}
+@media(max-width:410px){.product-context span:nth-child(3){flex-basis:100%}.product-context a{margin-left:0}}
 .trade-actions{display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:3px 4px 0;color:var(--muted);font-size:11px}
 .trade-actions a{display:inline-flex;align-items:center;gap:6px}.trade-actions a:hover{color:var(--text)}
 .risk-summary{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--border);border-radius:10px;padding:12px;margin:14px 0}
