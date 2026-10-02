@@ -55,6 +55,21 @@ export function LiquidityPage() {
   const feeLabel = useMemo(() => ({ [FeeAmount.LOWEST]: '0.01%', [FeeAmount.LOW]: '0.05%', [FeeAmount.MEDIUM]: '0.30%', [FeeAmount.HIGH]: '1.00%' }[fee]), [fee]);
   function changeNetwork(next: 1 | 8453) { const defaults = deployments[next].defaults; setNetworkId(next); setTokenA(defaults[0]); setTokenB(defaults[1]); setTx({ kind: 'idle' }); setPositions([]); setPositionsState('idle'); }
   useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const params = new URLSearchParams(window.location.search);
+      const requestedNetwork = Number(params.get('network'));
+      const requestedTokenA = params.get('tokenA');
+      const requestedTokenB = params.get('tokenB');
+      const requestedFee = Number(params.get('fee'));
+      if (requestedNetwork !== 1 && requestedNetwork !== 8453) return;
+      setNetworkId(requestedNetwork);
+      if (requestedTokenA && isAddress(requestedTokenA)) setTokenA(getAddress(requestedTokenA));
+      if (requestedTokenB && isAddress(requestedTokenB)) setTokenB(getAddress(requestedTokenB));
+      if ([100, 500, 3000, 10000].includes(requestedFee)) setFee(requestedFee as SupportedFee);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  useEffect(() => {
     const dialog = reviewDialog.current;
     if (!dialog) return;
     if (reviewing && !dialog.open) dialog.showModal();
